@@ -1,0 +1,12 @@
+{
+  "owner": "sanokendays-sketch",
+  "repositoryName": "nenmatsu-navi-2026",
+  "description": "令和8年分の年末調整申告書を、質問と実際の記入欄を見ながら準備するWebアプリ。PDF保存・保険契約の添付別紙に対応。",
+  "visibility": "public",
+  "defaultBranch": "main",
+  "pagesSource": "Deploy from a branch",
+  "pagesFolder": "/docs",
+  "expectedSiteUrl": "https://sanokendays-sketch.github.io/nenmatsu-navi-2026/",
+  "remoteRepositoryCreated": false,
+  "pagesPublished": false
+}

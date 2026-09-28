@@ -1,0 +1,32 @@
+name: 不具合の報告
+description: 質問、計算候補、記入欄、PDF保存などの問題を報告します。
+title: "[不具合] "
+body:
+  - type: markdown
+    attributes:
+      value: "実在する氏名・給与額・保険証券番号は書かず、架空の値で再現する手順を記載してください。"
+  - type: input
+    id: environment
+    attributes:
+      label: 使用端末・ブラウザー
+      placeholder: Windows 11 / Edge
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現する操作
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待した結果
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際の結果・画面
+    validations:
+      required: true

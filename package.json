@@ -1,0 +1,1 @@
+{"name":"nenmatsu-navi-2026","private":true,"version":"0.2.0","type":"module","scripts":{"build":"node scripts/build-site.mjs"},"engines":{"node":">=20"}}

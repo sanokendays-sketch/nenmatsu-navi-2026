@@ -1,0 +1,39 @@
+/* Shared attached statement for v1 and v2. */
+.v2-annex-document{margin-top:24px;padding:18px;border:2px solid #87b29b;border-radius:12px;background:#fff}
+.v2-annex-actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+.v2-annex-actions .button{min-height:48px}
+.v2-annex-table-view{display:none;overflow-x:auto}
+.v2-annex-document.is-expanded .v2-annex-table-view{display:block}
+.v2-annex-table{width:100%;min-width:1150px;border-collapse:collapse;font-size:.8rem}
+.v2-annex-table th,.v2-annex-table td{border:1px solid #81978b;padding:8px;text-align:left;vertical-align:top;overflow-wrap:anywhere}
+.v2-annex-table th{background:#edf5f0}.v2-annex-table strong{color:#914520}
+.v2-annex-amount{white-space:nowrap}
+.v2-annex-owner{font-weight:700;margin:20px 0}
+.v2-annex-total{display:flex;justify-content:space-between;gap:15px;padding:7px 0;border-bottom:1px solid #d3dfd8}
+.v2-annex-total strong{white-space:nowrap}
+@page insuranceSupplement{size:A4 landscape;margin:12mm}
+@media print{
+  .v2-annex-document{page:insuranceSupplement;break-before:page;border:0;border-radius:0;padding:0;margin:0;font-size:8pt}
+  .v2-annex-document>h3{font-size:14pt}
+  .v2-annex-actions,.v2-annex-document>.v2-paper-link{display:none!important}
+  .v2-annex-table-view{display:block!important;overflow:visible}
+  .v2-annex-table{min-width:0;table-layout:fixed;font-size:7.5pt}
+  .v2-annex-table th,.v2-annex-table td{padding:2mm;border-color:#666}
+  .v2-annex-table th{background:#fff}
+  .v2-annex-table thead{display:table-header-group}
+  .v2-annex-table tr{break-inside:avoid}
+  .v2-annex-table th:last-child{width:30mm}
+  .v2-annex-group{break-inside:auto}
+  .v2-annex-group h4{break-after:avoid;font-size:10pt}
+  .v2-annex-total{break-inside:avoid}
+  .v2-annex-only .v2-results>:not(.v2-entry-content){display:none!important}
+  .v2-annex-only .v2-entry-content>h2,.v2-annex-only .v2-result-card:not(.has-supplement),.v2-annex-only .has-supplement>:not(.v2-annex-document){display:none!important}
+  .v2-annex-only .v2-entry-content,.v2-annex-only .has-supplement{margin:0!important;padding:0!important;border:0!important}
+  .v2-annex-only .v2-annex-document{break-before:auto}
+}
+
+@media print{
+ .v2-annex-only .result-card>:not(.v2-annex-document){display:none!important}
+ .app-shell:has(.v2-annex-only)>.site-header,.app-shell:has(.v2-annex-only)>footer{display:none!important}
+ .v2-annex-only .result-card{max-width:none;margin:0;padding:0;border:0;box-shadow:none}
+}
