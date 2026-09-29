@@ -1565,479 +1565,9 @@ function formPreviewForQuestion(routeId, answers={}) {
   Object.assign(app, { FORM_PREVIEW_ASSETS, formPreviewsForGuideSection, renderFormPreviewSvg, formPreviewForQuestion });
 }(window.YearEndApp));
 
-/* copy-v3.js */
+/* app-v2.js */
 (function (app) {
-  const { QUESTIONS, baseQuestionId, pageForQuestion, WIZARD_PAGES, TAX_RULES_2026 } = app;
-
-
-
-
-// Presentation only. Saved choices and tax eligibility stay in the shared engine.
-const CHAPTERS_V3 = [
-  ['salary','あなたの給料','給与明細を用意します。税金などを引く前の金額を確認します。'],
-  ['spouse','結婚している相手','法律上結婚している相手の年齢と収入を確認します。'],
-  ['dependents','生活費を支える家族','子どもや親などを、一人ずつ確認します。'],
-  ['personal','あなたと家族の状況','手帳、結婚の状況、通っている学校について確認します。'],
-  ['life','生命保険の証明書','保険会社から届いた証明書を見ながら入力します。'],
-  ['earthquake','地震保険の証明書','家や家財の保険の証明書を確認します。'],
-  ['social','自分で払った年金など','給料から引かれた分は、ここに重ねて入力しません。'],
-  ['housing','住宅ローンと最後の確認','住宅ローンの書類と、会社へ相談することを整理します。']
-].map(([id,title,lead])=>({id,title,lead,source:WIZARD_PAGES.find(p=>p.id===id).source}));
-
-const row=(title,help,example='')=>({title,help,example});
-const QUESTION_COPY_V3 = {
- target:row('今年の年末調整は、この会社で行いますか？','会社から届いた年末調整の案内を確認してください。','年末調整は、会社が1年分の所得税を計算し直す手続きです。'),
- form:row('「扶養控除等申告書」を、この会社に出しましたか？','家族の有無にかかわらず提出する書類です。提出済みか分からなければ、あとで会社に確認できます。','用紙の上に「給与所得者の扶養控除等（異動）申告書」と書かれています。'),
- salaryLimit:row(`今年の給料とボーナスの合計は、${(TAX_RULES_2026.thresholds.salaryLimitForYearEndAdjustment/10000).toLocaleString('ja-JP')}万円以下ですか？`,'すべての勤務先の分を合わせます。税金などを引く前の金額で考えてください。'),
- changedJob:row('今年、別の会社からこの会社へ転職しましたか？','2026年1月から12月までの間のことを答えます。'),
- priorSlip:row('前の会社の「源泉徴収票」は手元にありますか？','給料と税金が書かれた書類です。まだ届いていなければ「まだ受け取っていない」を選びます。'),
- otherSalary:row('今年、この会社のほかにも給料をもらいましたか？','前の会社や、ほかのアルバイト先からもらった給料も含めます。'),
- allSalary:row('今年の給料とボーナスを全部合わせると、いくらですか？','すべての勤務先の、税金などを引く前の金額です。12月までの見込みも含めます。','480万円なら「4,800,000」と入力します。源泉徴収票では「支払金額」を見ます。非課税の通勤手当は含めません。'),
- ownSalary:row('今年、この会社の給料とボーナスは合計いくらですか？','税金などを引く前の金額です。12月までの見込みも含めます。','480万円なら「4,800,000」と入力します。給与明細の税金の対象となる支給額を確認します。非課税の通勤手当は含めません。'),
- otherIncome:row('給料以外に、年金や副業などの収入はありますか？','給料以外の金額は、このアプリだけでは計算しきれないため、会社へ確認する内容にまとめます。'),
- spouse:row('法律上、結婚している相手はいますか？','この相手を、書類では「配偶者（はいぐうしゃ）」と呼びます。事実婚の相手はここには含めません。'),
- spouseShared:row('結婚している相手と、生活費を一緒にまかなっていますか？','別々に住んでいても、仕送りなどで生活費を支えている場合があります。判断に迷えば、あとで確認します。'),
- spouseClaimed:row('その相手を、別の人も家族として税の書類に書いていますか？','同じ人について、家族向けの控除を重ねて申し込むことがないか確認します。'),
- spouseAge:row('その相手は、2026年12月31日に何歳ですか？','今日の年齢ではなく、今年の年末の年齢を入力します。'),
- spouseIncomeType:row('その相手の今年の収入は、どれですか？','パートやアルバイトも「給料」に含めます。年金や事業の収入は給料とは別です。'),
- spouseSalary:row('その相手の今年の給料は、合計いくらですか？','パート・アルバイト・ボーナスを合わせます。税金などを引く前の金額です。','120万円なら「1,200,000」と入力します。'),
- dependents:row('結婚している相手以外に、生活費を支えている家族はいますか？','子どもや親などについて答えます。離れて暮らしていても、生活費を送っている場合は確認します。'),
- dependentCount:row('生活費を支えている家族は、何人ですか？','結婚している相手は数えません。これから一人ずつ確認します。1〜10人で入力します。'),
- dependentKin:row('この人は、あなたの親族ですか？','子・親・兄弟姉妹など、血縁や結婚による親族かを確認します。範囲に迷えば「あとで確認」を選んでください。'),
- dependentAge:row('この人は、2026年12月31日に何歳ですか？','赤ちゃんは0歳です。年齢によって、用紙に書く場所が変わります。'),
- dependentIncome:row('この人の今年の収入は、どれですか？','アルバイトも給料です。年金や事業などがある場合は「給料以外もある」を選びます。'),
- dependentSalary:row('この人の今年の給料は、合計いくらですか？','すべての勤務先の給料とボーナスを合わせます。税金などを引く前の金額です。'),
- dependentShared:row('この人を、ほかの人も税の書類に家族として書く予定ですか？','たとえば、子どもについて夫婦の両方が申し込む予定になっていないかを確認します。'),
- dependentParent:row('この人は、あなたか結婚相手の親・祖父母などですか？','父母、祖父母、その上の世代の親族について確認します。'),
- dependentCohabit:row('この人と、ふだん同じ家で暮らしていますか？','老人ホームなどに入っている場合は、その選択肢を選びます。'),
- life:row('「生命保険料控除証明書」はありますか？','保険会社から届く、年末調整のための書類です。医療保険や個人年金の証明書も含みます。','電子データで届いている場合もあります。'),
- lifeCount:row('入力する生命保険の契約・区分は、いくつですか？','一つの契約に「一般」と「介護医療」が両方あれば、2件として入力します。紙の行が足りない分は、別紙にまとめます。','証明書の枚数と、入力する件数は同じとは限りません。1〜100件で入力します。'),
- lifeType:row('証明書の保険の区分は、どれですか？','証明書にある「一般・介護医療・個人年金」と「新・旧」を見て選びます。契約日から自分で推測しなくて大丈夫です。'),
- lifeAmount:row('証明書にある「申告額」は、いくらですか？','保険会社が年末調整用に示した申告額を入力します。計算後の「控除額」は入力しません。','証明書に金額が複数ある場合は、申告額・申告予定額などの表示を確認してください。迷えば、あとで確認します。'),
- lifePaid:row('この保険のお金を払ったのは、あなたですか？','契約者の名前ではなく、実際にお金を払った人を確認します。'),
- lifeRecipient:row('この保険のお金を受け取る人は、誰ですか？','保険金や年金の受取人を、証明書や契約の書類で確認します。'),
- lifeCompanyName:row('証明書にある保険会社の名前を入力してください。','省略せず、証明書に書かれている名前を使います。'),
- lifeInsuranceKind:row('証明書にある保険の種類を入力してください。','用紙の「保険等の種類」に書く内容です。','終身保険、医療保険、個人年金など。'),
- lifeInsurancePeriod:row('保険の期間、または年金を受け取る期間を入力してください。','証明書に書かれた表現をそのまま使います。','「終身」「10年」など。'),
- lifeHolderName:row('この保険を契約した人の名前は、何ですか？','書類では「契約者の氏名」と書かれています。'),
- lifeRecipientName:row('保険金や年金を受け取る人の名前は、何ですか？','契約した人と同じなら、「契約者と同じ」ボタンを使えます。'),
- lifeRecipientRelationship:row('受け取る人は、あなたから見てどんな関係ですか？','書類では「あなたとの続柄（つづきがら）」と書かれています。','子、父、母など。'),
- lifePensionStartDate:row('個人年金を受け取り始める日は、いつですか？','証明書の「支払開始日」を、そのまま入力します。','令和18年4月1日など。'),
- earthquake:row('「地震保険料控除証明書」はありますか？','家や家財の保険会社から届いた、年末調整のための書類を確認します。'),
- earthquakeCount:row('証明書にある地震保険の契約は、いくつですか？','1〜100件で入力します。紙の行が足りない分は、別紙にまとめます。'),
- earthquakeType:row('証明書の区分は、どれですか？','「地震保険料」か「旧長期損害保険料」という表示を探します。'),
- earthquakeElection:row('同じ契約の二つの区分のうち、どちらで申し込みますか？','同じ契約について、両方の控除は使えません。選び方に迷えば会社に確認します。'),
- earthquakeAmount:row('選んだ区分の、証明書の金額はいくらですか？','保険料の金額を入力します。計算後の控除額は入力しません。'),
- earthquakePaid:row('この保険のお金を払ったのは、あなたですか？','契約者の名前ではなく、実際にお金を払った人を確認します。'),
- earthquakeCompanyName:row('証明書にある保険会社の名前を入力してください。','証明書に書かれている名前を使います。'),
- earthquakeInsuranceKind:row('この保険は、何を守る保険ですか？','証明書にある種類・目的を、そのまま入力します。','住宅、家財など。'),
- earthquakeInsurancePeriod:row('証明書にある保険の期間を入力してください。','用紙の「保険期間」に書く内容です。','1年、5年など。'),
- earthquakeHolderName:row('この保険を契約した人の名前は、何ですか？','書類では「契約者の氏名」と書かれています。'),
- earthquakeInsuredName:row('保険の対象の家に住む人、または家財を使う人の名前は？','契約した人と同じなら、「契約者と同じ」ボタンを使えます。'),
- earthquakeInsuredRelationship:row('その人は、あなたから見てどんな関係ですか？','書類では「あなたとの続柄（つづきがら）」と書かれています。','本人、配偶者、子、父、母など。'),
- social:row('給料から引かれた分のほかに、年金や健康保険を自分で払いましたか？','自分で払った国民年金などを確認します。給料から引かれた社会保険料は、会社が扱うため重ねて入力しません。'),
- socialTypes:row('自分で払ったものを、すべて選んでください。','複数選べます。給料から引かれた分は選びません。'),
- socialAmount:row('選んだものに、今年いくら払いましたか？','選んだ種類の、自分で払った分を合計します。給料から引かれた分は足しません。'),
- ideco:row('給料から引かれた分のほかに、iDeCoなどの掛金を払いましたか？','掛金は、制度へ毎月などに払うお金です。iDeCo・小規模企業共済などの証明書を確認します。'),
- idecoType:row('払った掛金の制度は、どれですか？','証明書の制度名を見て選びます。分からない場合は、あとで確認します。'),
- idecoAmount:row('証明書にある、今年の掛金はいくらですか？','あなたが払った、給料から引かれていない分を入力します。'),
- disabilitySelf:row('あなたの障害者控除の区分は、どれですか？','手帳や自治体の認定を確認します。「一般」「特別」の区分に迷う場合は、自己判断せず、あとで確認してください。'),
- disabilityFamily:row('結婚相手や登録した家族に、障害者控除の対象となる人はいますか？','手帳や自治体の認定などがあるか確認します。年齢だけで対象外とは決まりません。'),
- disabilityPerson:row('この人の障害者控除の区分は、どれですか？','手帳や自治体の認定を確認します。「一般」「特別」の区分に迷う場合は、あとで確認してください。'),
- disabilityCohabit:row('この人は、あなたか生活費を共にする家族と同居していますか？','あなた、結婚相手、生活費を共にする親族のいずれかとの同居を確認します。'),
- parentStatus:row('2026年12月31日の、あなたの結婚の状況はどれですか？','ひとり親・寡婦（かふ）の欄に関係するため確認します。制度に当てはまるかは、回答から整理します。'),
- deFactoPartner:row('婚姻届は出していなくても、夫婦と同じように暮らす相手はいますか？','制度上の「事実婚」に当たるかを確認します。判断が難しければ、あとで会社に確認します。'),
- parentChild:row('あなたと生活費を共にする子どもはいますか？','別に住んでいても、生活費の仕送りをしている場合があります。'),
- parentChildIncomeKnown:row('その子の「所得」の金額は、確認できますか？','所得は、収入から税のルールで決まる経費や差し引き額を引いた金額です。給料の額面や手取りとは別です。'),
- parentChildIncome:row('その子の今年の「合計所得金額」は、いくらですか？','確認できた所得の金額を入力します。給料の合計をそのまま入力しないでください。分からなければ、あとで確認します。'),
- parentChildClaimed:row('その子を、ほかの人も税の書類に家族として書きますか？','同じ子について、ほかの人が扶養親族などとして申し込んでいないか確認します。'),
- widowGender:row('寡婦の制度の確認のため、あなたの性別を選んでください。','寡婦（かふ）の控除は女性が対象です。ひとり親の控除は性別を問いません。'),
- student:row('2026年12月31日に、学校に通っていますか？','仕事をしながら学校に通う方に関係する欄を確認します。'),
- studentSchool:row('通っている学校は、どれですか？','専修学校などは課程によって対象が変わります。学校で確認していなければ「課程は未確認」を選びます。'),
- housing:row('住宅ローンの控除を使っていますか？','住宅を買うためのローンに関する制度です。使えるか分からない場合は、会社へ確認する内容にまとめます。'),
- housingFirst:row('住宅ローンの控除を使うのは、今年が初めてですか？','初めての年は、原則として税務署への確定申告が必要です。2年目以降は、年末調整で受けられる場合があります。'),
- housingDocs:row('住宅ローンの控除申告書・控除証明書はありますか？','税務署からの用紙や電子データを確認します。このアプリでは住宅ローン控除額を計算しません。'),
- housingBalance:row('年末のローン残高が分かる情報はありますか？','金融機関からの残高証明書や、電子連携の情報を確認します。'),
- special:row('最後に、当てはまることをすべて選んでください。','一つもなければ「どれもない」を選びます。選んだ内容は会社への確認一覧にまとめます。')
-};
-
-const GLOSSARY_V3 = [
- ['収入','給料などの、税金や社会保険料を引く前の金額です。'],
- ['手取り','税金や社会保険料が引かれたあと、受け取る金額です。'],
- ['所得','収入から、税のルールで決まる経費や差し引き額を引いた金額です。手取りとは別です。'],
- ['控除（こうじょ）','税金を計算するときに、所得などから差し引く仕組みです。控除額がそのまま戻るお金になるわけではありません。'],
- ['配偶者（はいぐうしゃ）','法律上結婚している相手です。'],
- ['扶養（ふよう）','この案内では、家族の生活費を支えることです。税の対象になるかは、年齢や所得なども確認します。'],
- ['生計を一にする','生活費を共にしていることです。別居でも仕送りなどで該当する場合があります。'],
- ['続柄（つづきがら）','あなたから見た関係です。子・父・母などです。'],
- ['控除証明書','保険会社などが、年末調整に使う金額を知らせる書類です。'],
- ['源泉徴収票','会社が出す、1年分の給料と税金などをまとめた書類です。']
-];
-
-const OPTION_LABELS={
- '分からない':'分からない・あとで確認', 'まだ':'まだ受け取っていない',
- '給与だけ':'給料だけ（パート・アルバイトも含む）', '給与以外もある':'年金や事業など、給料以外もある',
- '給与がある':'給料がある（アルバイトも含む）', '給与以外の所得がある':'給料以外もある（年金・事業など）',
- '副業・事業所得':'副業や事業の収入', '不動産所得':'家賃などの収入',
- '婚姻中':'法律上、結婚している', '未婚':'結婚したことがない', '離婚':'離婚している',
- '死別・生死不明':'相手と死別した・相手の生死が分からない',
- '国外居住親族がいる':'外国に住む親族がいる',
- '配偶者や扶養家族に事業所得がある':'結婚相手や家族に、事業の収入がある',
- '扶養を他の人も申告する可能性':'同じ家族を、ほかの人も税の書類に書くかもしれない',
- '年途中に結婚・離婚・出生・死亡':'今年、結婚・離婚・出産・家族の死亡があった',
- '小・中・高校、大学、高等専門学校':'小学校・中学校・高校・大学・高等専門学校',
- '対象課程と確認済みの専修学校等':'専修学校など（対象の課程と確認済み）',
- '専修学校・各種学校・職業訓練校（課程未確認）':'専修学校・各種学校・職業訓練校（課程は未確認）'
-};
-
-function choiceLabelV3(choice){return OPTION_LABELS[choice]||choice;}
-function questionCopyV3(routeId){
- const key=baseQuestionId(routeId),copy=QUESTION_COPY_V3[key];
- if(!copy)throw new Error(`v3 copy missing: ${key}`);
- const chapter=CHAPTERS_V3.find(c=>c.id===pageForQuestion(routeId));
- const who=routeId.startsWith('dep:')?`${routeId.split(':')[1]}人目の家族`:routeId.startsWith('life:')?`生命保険 ${routeId.split(':')[1]}件目`:routeId.startsWith('earthquake:')?`地震保険 ${routeId.split(':')[1]}件目`:routeId.startsWith('disability:')?routeId.includes(':spouse:')?'結婚している相手':`${routeId.split(':')[2]}人目の家族`:null;
- return {...copy,key,chapter,who,officialQuestion:QUESTIONS[key].text};
-}
-
-function parseNumberV3(raw,q){
- const normalized=String(raw).normalize('NFKC').trim().replace(/[,，]/g,'');
- const min=q.input==='count'?1:0,max=q.input==='count'?(q.max??10):q.input==='age'?120:999999999;
- const unit=q.input==='money'?'円':q.input==='age'?'歳':q.unit==='件数'?'件':q.unit||'人';
- if(!/^\d+$/.test(normalized))return {ok:false,message:`${unit==='円'?'金額':unit==='歳'?'年齢':'数'}を数字で入力してください。例：${q.input==='money'?'1,200,000':q.input==='age'?'20':'2'}。小数や「万円」は使いません。`};
- const value=Number(normalized);
- if(!Number.isInteger(value)||value<min||value>max)return {ok:false,message:`${min.toLocaleString('ja-JP')}〜${max.toLocaleString('ja-JP')}${unit}で入力してください。`};
- return {ok:true,value,unit};
-}
-
-function fieldPurposeV3(field){
- if(field.key==='income-adjustment-amount'||/^dependent-\d+-(deduction|specific-relative)$/.test(field.key))return '計算の参考・この金額を所得の欄へ書きません';
- if(field.status==='incomplete')return '用紙にご自身で書くこと';
- if(field.status==='needs_confirmation')return '転記する前に確認すること';
- if(field.label.includes('支払')||field.key==='salary-revenue'||field.key==='spouse-salary-revenue')return '収入・支払った金額を書く欄';
- if(field.label.includes('控除額')||field.label.includes('控除の額'))return '計算後の控除額を書く欄';
- if(field.key.includes('income'))return '計算した所得を書く欄（手取りではありません）';
- if(field.key.includes('judgement')||field.key.includes('classification')||field.key.includes('eligibility')||field.key.endsWith('-status')||field.key.startsWith('specific-relative-'))return '該当する欄を確認するための案内';
- return '用紙に書く内容';
-}
-
-  Object.assign(app, { CHAPTERS_V3, QUESTION_COPY_V3, GLOSSARY_V3, choiceLabelV3, questionCopyV3, parseNumberV3, fieldPurposeV3 });
-}(window.YearEndApp));
-
-/* journey-v3.js */
-(function (app) {
-  const { traceWizard, commitWizardAnswer } = app;
-
-function createJourneyV3(){return {answers:{},mode:'home',currentId:null,checkpointPage:null,returnToResult:false};}
-function currentItemV3(journey){
- const trace=traceWizard(journey.answers);
- return trace.items.find(x=>x.id===journey.currentId)||trace.items.find(x=>!x.answered)||trace.items.at(-1);
-}
-function startJourneyV3(journey){journey.mode='question';journey.currentId=traceWizard(journey.answers).pending;}
-function editAnswerV3(journey,id){
- if(!traceWizard(journey.answers).items.some(x=>x.id===id))return;
- journey.returnToResult=journey.mode==='result';journey.mode='question';journey.currentId=id;
-}
-function submitAnswerV3(journey,id,value){
- const before=traceWizard(journey.answers).items.find(x=>x.id===id);
- if(!before)return;
- const trace=commitWizardAnswer(journey.answers,id,value);
- if(trace.terminal==='end'){journey.mode='end';journey.currentId='target';journey.returnToResult=false;return;}
- if(journey.returnToResult){journey.returnToResult=false;journey.mode=trace.terminal==='result'?'result':'question';journey.currentId=trace.pending;return;}
- const index=trace.items.findIndex(x=>x.id===id),next=trace.items[index+1];
- journey.currentId=next?.id||trace.pending;
- if(!next||next.page!==before.page){journey.mode='checkpoint';journey.checkpointPage=before.page;}
- else journey.mode='question';
-}
-function continueJourneyV3(journey){
- const trace=traceWizard(journey.answers);
- if(trace.terminal==='end'){journey.mode='end';return;}
- if(!journey.currentId&&trace.terminal==='result'){journey.mode='result';return;}
- journey.mode='question';journey.currentId=journey.currentId||trace.pending;
-}
-function backJourneyV3(journey){
- const trace=traceWizard(journey.answers);
- journey.returnToResult=false;
- if(journey.mode==='result'){journey.currentId=trace.items.at(-1)?.id;journey.mode='question';return;}
- if(journey.mode==='checkpoint'){journey.currentId=trace.items.filter(x=>x.page===journey.checkpointPage).at(-1)?.id;journey.mode='question';return;}
- const index=trace.items.findIndex(x=>x.id===journey.currentId);
- if(index>0){journey.currentId=trace.items[index-1].id;journey.mode='question';}
-}
-
-  Object.assign(app, { createJourneyV3, currentItemV3, startJourneyV3, editAnswerV3, submitAnswerV3, continueJourneyV3, backJourneyV3 });
-}(window.YearEndApp));
-
-/* identity-v3.js */
-(function (app) {
-  const { TAX_RULES_2026 } = app;
-
-// Optional paper-entry data, separate from tax answers. Memory only.
-const PERSON_FIELDS=[['name','氏名',80],['kana','フリガナ',80],['birthDate','生年月日',10],['addressMode','住所の選び方',12],['address','住所又は居所',160],['relationship','あなたとの続柄',20]];
-const OWNER_FIELDS=[['name','あなたの氏名',80],['kana','フリガナ',80],['postalCode','郵便番号',8],['address','あなたの住所又は居所',160],['birthDate','あなたの生年月日',10],['householdName','世帯主の氏名',80],['householdRelationship','世帯主の、あなたとの続柄',20]];
-const EMPLOYER_FIELDS=[['name','勤務先の名称',120],['address','勤務先の住所',160]];
-const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-
-function createIdentityV3(){return {taxpayer:{},employer:{},spouse:{},dependents:[]};}
-function syncIdentityV3(identity,answers={}){
- const source=identity||createIdentityV3(),count=Math.max(0,Math.min(100,Number(answers.depCount)||0));
- return {taxpayer:{...source.taxpayer},employer:{...source.employer},spouse:answers.spouse==='はい'?{...source.spouse}:{},dependents:Array.from({length:count},(_,i)=>({...source.dependents?.[i]}))};
-}
-function identityDateTextV3(value){
- if(!/^\d{4}-\d{2}-\d{2}$/.test(value||''))return '';
- const date=new Date(`${value}T00:00:00Z`);
- if(!Number.isFinite(date.getTime())||date.toISOString().slice(0,10)!==value)return '';
- return new Intl.DateTimeFormat('ja-JP-u-ca-japanese',{dateStyle:'long',timeZone:'UTC'}).format(date);
-}
-function identityAddressV3(person,identity){return person?.addressMode==='same'?identity.taxpayer?.address||'':person?.address||'';}
-function identityAgeAtYearEndV3(birthDate){
- if(!identityDateTextV3(birthDate))return null;
- // 2026 NTA form: age 16 includes births on 2011-01-01; age 19 includes
- // 2008-01-01. The birthday eve is when age increases under Japanese law.
- return TAX_RULES_2026.year-Number(birthDate.slice(0,4))+(birthDate.slice(5)==='01-01'?1:0);
-}
-
-function scopes(identity,answers){
- return [['taxpayer',identity.taxpayer,OWNER_FIELDS,'あなた'],['employer',identity.employer,EMPLOYER_FIELDS,'勤務先'],...(answers.spouse==='はい'?[['spouse',identity.spouse,PERSON_FIELDS.filter(f=>f[0]!=='relationship'),'結婚している相手']]:[]),...identity.dependents.map((person,i)=>[`dependents.${i}`,person,PERSON_FIELDS,`${i+1}人目の家族`])];
-}
-function setPath(identity,path,value){
- const parts=path.split('.'),field=parts.pop();
- const record=parts[0]==='dependents'?identity.dependents[Number(parts[1])]:identity[parts[0]];
- if(record)record[field]=value;
-}
-function captureIdentityFormV3(form,answers){
- const identity=syncIdentityV3(createIdentityV3(),answers);
- const allowed=new Set(scopes(identity,answers).flatMap(([path,,fields])=>fields.map(([key])=>`${path}.${key}`)));
- for(const input of form.querySelectorAll('[data-identity-path]'))if(allowed.has(input.dataset.identityPath))setPath(identity,input.dataset.identityPath,input.value);
- return identity;
-}
-function validateIdentityV3(raw,answers){
- const identity=syncIdentityV3(raw,answers),errors=[];
- for(const [path,person,fields,title] of scopes(identity,answers))for(const [key,label,max] of fields){
-  const value=String(person[key]??'').trim();person[key]=value;
-  if(value.length>max)errors.push({path:`${path}.${key}`,message:`${title}の${label}は${max}文字以内で入力してください。`});
-  if(key==='addressMode'&&!['','same','different'].includes(value))errors.push({path:`${path}.${key}`,message:'住所の選び方を選び直してください。'});
-  if(key==='birthDate'&&value&&(!identityDateTextV3(value)||value<'1900-01-01'||value>`${TAX_RULES_2026.year}-12-31`))errors.push({path:`${path}.${key}`,message:`${title}の生年月日を1900年から${TAX_RULES_2026.year}年の実在する日付で入力してください。`});
-  if(key==='postalCode'&&value){
-   const normalized=value.normalize('NFKC').replace(/\s/g,'');
-   if(!/^\d{3}-?\d{4}$/.test(normalized))errors.push({path:`${path}.${key}`,message:'郵便番号は123-4567のように7桁の数字で入力してください。'});
-   else person[key]=normalized.replace(/^(\d{3})-?(\d{4})$/,'$1-$2');
-  }
- }
- return {ok:!errors.length,identity,errors};
-}
-function identityWarningsV3(identity,answers){
- const warnings=[];
- for(const [title,person,age] of [...(answers.spouse==='はい'?[['配偶者',identity.spouse,answers.spouseAge]]:[]),...identity.dependents.map((p,i)=>[`${i+1}人目の家族`,p,answers[`dep:${i+1}:age`]])]){
-  if(person.birthDate&&typeof age==='number'&&identityAgeAtYearEndV3(person.birthDate)!==age)warnings.push(`${title}の生年月日と年末の年齢の回答が一致していません。年齢の回答又は生年月日を修正してください。修正まで生年月日は用紙に反映しません。`);
-  if(person.addressMode==='same'&&!identity.taxpayer.address)warnings.push(`${title}は本人と同じ住所を選んでいます。本人の住所を入力してください。`);
- }
- return warnings;
-}
-
-function personFields(prefix,person,identity){
- const records=[['name','氏名',person.name],['kana','フリガナ',person.kana],['birth','生年月日',identityDateTextV3(person.birthDate)],['relationship','あなたとの続柄',person.relationship],['address','住所又は居所',identityAddressV3(person,identity)]];
- return records.map(([key,label,value])=>({key:`${prefix}-${key}`,label,value:value||null,status:value?'calculated':'incomplete',inputOnly:true}));
-}
-function attachIdentityToGuideV3(guide,identity,answers){
- const data=syncIdentityV3(identity,answers),warnings=identityWarningsV3(data,answers);
- const owner=[['name','あなたの氏名',data.taxpayer.name],['kana','フリガナ',data.taxpayer.kana],['postal','郵便番号',data.taxpayer.postalCode],['address','あなたの住所又は居所',data.taxpayer.address],['employer-name','給与の支払者の名称（氏名）',data.employer.name],['employer-address','給与の支払者の所在地（住所）',data.employer.address]].map(([key,label,value])=>({key:`paper-owner-${key}`,label,value:value||null,status:value?'calculated':'incomplete',inputOnly:true}));
- const forms=guide.forms.map(form=>{
-  if(form.id==='housingForm')return form;
-  const fields=form.sections.map(section=>({...section,fields:section.fields.flatMap(field=>{
-   if(field.key==='taxpayer-identity')return [...owner,...[['birth','あなたの生年月日',identityDateTextV3(data.taxpayer.birthDate)],['household-name','世帯主の氏名',data.taxpayer.householdName],['household-relationship','あなたとの続柄（世帯主）',data.taxpayer.householdRelationship]].map(([key,label,value])=>({key:`paper-owner-${key}`,label,value:value||null,status:value?'calculated':'incomplete',inputOnly:true}))];
-   if(field.key==='spouse-identity'&&Object.values(data.spouse).some(Boolean))return personFields('paper-spouse',data.spouse,data).filter(f=>!f.key.endsWith('-relationship'));
-   const match=field.key.match(/^dependent-(\d+)-identity$/);
-   if(match&&Object.values(data.dependents[Number(match[1])-1]||{}).some(Boolean))return personFields(`paper-relative-${match[1]}`,data.dependents[Number(match[1])-1],data);
-   const specific=field.key.match(/^specific-relative-(\d+)$/);
-   if(specific&&Object.values(data.dependents[Number(specific[1])-1]||{}).some(Boolean))return [...personFields(`paper-specific-${specific[1]}`,data.dependents[Number(specific[1])-1],data),field];
-   return [field];
-  })}));
-  const spouseSection=fields.find(section=>section.id==='spouse-deduction');
-  if(spouseSection&&Object.values(data.spouse).some(Boolean))spouseSection.fields.unshift(...personFields('paper-spouse',data.spouse,data).filter(f=>!f.key.endsWith('-relationship')));
-  if(form.id!=='dependentForm')fields.unshift({id:'paper-identity',title:'本人・勤務先の記入内容',status:'incomplete',fields:owner});
-  return {...form,sections:fields};
- });
- const blocked=[];
- if(data.spouse.birthDate&&typeof answers.spouseAge==='number'&&identityAgeAtYearEndV3(data.spouse.birthDate)!==answers.spouseAge)blocked.push('spouse');
- data.dependents.forEach((p,i)=>{if(p.birthDate&&typeof answers[`dep:${i+1}:age`]==='number'&&identityAgeAtYearEndV3(p.birthDate)!==answers[`dep:${i+1}:age`])blocked.push(`dependent-${i+1}`);});
- for(const form of forms)for(const section of form.sections)for(const field of section.fields){
-  if(!field.inputOnly||field.label!=='生年月日')continue;
-  const relative=field.key.match(/^paper-(?:relative|specific)-(\d+)-birth$/);
-  if(field.key==='paper-spouse-birth'&&blocked.includes('spouse')||relative&&blocked.includes(`dependent-${relative[1]}`)){
-   field.value=null;field.status='needs_confirmation';field.note='年齢の回答又は生年月日を修正してから転記してください。';
-  }
- }
- return {...guide,forms,identityInfo:data,identityBirthBlocks:blocked,identityWarnings:warnings,staffConfirmations:[...new Set([...guide.staffConfirmations,...warnings])]};
-}
-
-function renderIdentityEditorV3(identity,answers){
- const data=syncIdentityV3(identity,answers);
- const input=(path,person,[key,label,max])=>{
-  const id=`identity-${path.replace(/\./g,'-')}-${key}`,value=person[key]||'';
-  if(key==='addressMode')return `<div class="v3-identity-field"><label for="${id}">住所は本人と同じですか？</label><select id="${id}" data-identity-path="${path}.${key}"><option value="" ${!value?'selected':''}>まだ選ばない</option><option value="same" ${value==='same'?'selected':''}>本人と同じ住所を使う</option><option value="different" ${value==='different'?'selected':''}>別の住所を下に入力する</option></select></div>`;
-  return `<div class="v3-identity-field"><label for="${id}">${esc(label)}</label><input id="${id}" type="${key==='birthDate'?'date':'text'}" data-identity-path="${path}.${key}" value="${esc(value)}" maxlength="${max}" autocomplete="off" ${key==='birthDate'?`min="1900-01-01" max="${TAX_RULES_2026.year}-12-31"`:''} ${key==='postalCode'?'inputmode="numeric"':''}>${key==='address'?`<small>番地・建物名まで入力します。${path==='taxpayer'||path==='employer'?'':'「本人と同じ」を選んだ方は空欄で構いません。'}</small>`:''}${key==='birthDate'?'<small>西暦で入力し、用紙には和暦で表示します。年齢の回答と違う場合は確認します。</small>':''}</div>`;
- };
- return `<section class="v3-identity-editor" id="v3-identity-editor"><h2>最後に、名前や住所を用紙へ入れる</h2><p>入力は任意です。一度入力した本人情報を各用紙で使います。空欄は後から手書きできます。</p><p>個人番号はここでは入力しません。必要な記入方法は会社の案内に従ってください。入力はこの画面を開いている間だけ保持し、保存・送信しません。</p><form data-identity-form novalidate>${scopes(data,answers).map(([path,person,fields,title])=>`<fieldset><legend>${esc(title)}</legend><div class="v3-identity-grid">${fields.map(field=>input(path,person,field)).join('')}</div></fieldset>`).join('')}<p>入力後に「用紙へ反映する」を押して、下の用紙で文字を確認してください。</p><button class="button v3-primary" type="submit">名前・住所などを用紙へ反映する</button><button class="button tertiary" type="button" data-action="clear-identity">名前などを消して、手書きにする</button><p class="v3-error" id="v3-identity-error" role="alert" hidden></p></form></section>`;
-}
-
-  Object.assign(app, { createIdentityV3, syncIdentityV3, identityDateTextV3, identityAddressV3, identityAgeAtYearEndV3, captureIdentityFormV3, validateIdentityV3, identityWarningsV3, attachIdentityToGuideV3, renderIdentityEditorV3 });
-}(window.YearEndApp));
-
-/* official-output-v3.js */
-(function (app) {
-  const { FORM_PREVIEW_ASSETS, formPreviewsForGuideSection, createIdentityV3, identityDateTextV3, identityAddressV3 } = app;
-
-
-// Presentation coordinates only, in the stored 200 dpi official front images.
-// Row boundaries visually checked against 2026bun_01/04/06.pdf, 2026-09-29.
-// No new tax calculations. The original images and PDFs are never modified.
-const ASSET_BY_FORM = {dependentForm:'fuyou',combinedForm:'combined',insuranceForm:'insurance'};
-const ROWS = {
-  lifeGeneral:{tops:[395,449,505,560],origin:395},
-  lifeCare:{tops:[774,832,892],origin:774},
-  lifePension:{tops:[1008,1070,1131],origin:1008},
-  quake:{tops:[432,544],origin:432},
-  fuyouDependent:{tops:[552,662,773,883],origin:552},
-  fuyouUnder16:{tops:[1407,1462],origin:1407},
-  specificRelative:{tops:[1118,1194],origin:1118}
-};
-const esc = value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-
-function textLayout(entry) {
-  const [, ,w,h]=entry.box;
-  if(entry.valueKind!=='text')return {size:Math.min(30,h*.72,(w-10)/(entry.text.length*.62)),lines:[entry.text]};
-  // Keep the entire value; never truncate a name on a printable form.
-  const chars=Array.from(entry.text);
-  for(let size=Math.min(22,h*.64);size>=12;size-=1){
-    const columns=Math.max(1,Math.floor((w-8)/size));
-    const lines=Array.from({length:Math.ceil(chars.length/columns)},(_,i)=>chars.slice(i*columns,(i+1)*columns).join(''));
-    if(lines.length*size*1.1<=h-2)return {size,lines};
-  }
-  return null;
-}
-
-function buildOfficialOutputV3(guide) {
-  const pages=[];
-  const identity=guide.identityInfo||createIdentityV3(),blocked=new Set(guide.identityBirthBlocks||[]);
-  for(const form of guide.forms||[]){
-    const asset=FORM_PREVIEW_ASSETS[ASSET_BY_FORM[form.id]];
-    // The housing asset is an example containing another person's sample data.
-    if(!asset||asset.kind!=='blank')continue;
-    const entries=[],notes=[],seen=new Set(),personRows={};
-    const add=(entry,offset=0)=>{
-      if(!entry||entry.status!=='calculated'||seen.has(entry.key))return;
-      const shifted={...entry,box:[entry.box[0],entry.box[1]+offset,entry.box[2],entry.box[3]]};
-      const layout=textLayout(shifted);
-      if(!layout){notes.push(`${entry.label}：長い文字は省略せず、一覧を見て手書きしてください。`);return;}
-      if(shifted.box[1]+shifted.box[3]>asset.height)return;
-      seen.add(entry.key);entries.push({...shifted,layout});
-    };
-    const text=(key,label,value,box,offset=0)=>{if(value)add({key,label,text:String(value),box,status:'calculated',valueKind:'text'},offset);};
-    const owner=identity.taxpayer,employer=identity.employer;
-    const header={
-      dependentForm:{name:[1078,124,399,49],kana:[1078,91,399,24],address:[1078,278,662,34],postalCode:[1260,248,260,22],birthDate:[1611,92,317,36],householdName:[1611,140,317,33],householdRelationship:[1611,190,317,44],employerName:[477,103,432,66],employerAddress:[477,253,432,55]},
-      combinedForm:{name:[1158,145,647,52],kana:[1158,110,647,24],address:[1158,216,647,37],employerName:[525,112,447,35],employerAddress:[525,217,447,35]},
-      insuranceForm:{name:[1266,147,682,60],kana:[1266,103,682,28],address:[1266,241,682,56],employerName:[433,105,641,61],employerAddress:[433,250,641,48]}
-    }[form.id];
-    const labels={name:'氏名',kana:'フリガナ',address:'住所又は居所',birthDate:'生年月日',householdName:'世帯主の氏名',householdRelationship:'世帯主との続柄',relationship:'あなたとの続柄'};
-    for(const key of ['name','kana','address','birthDate','householdName','householdRelationship']){
-      if(!header[key])continue;
-      const value=key==='birthDate'?identityDateTextV3(owner[key]):key==='address'&&form.id!=='dependentForm'?[owner.postalCode?`〒${owner.postalCode}`:'',owner.address].filter(Boolean).join(' '):owner[key];
-      text(`identity-owner-${key}`,labels[key],value,header[key]);
-    }
-    const postal=String(owner.postalCode||'').match(/^(\d{3})-?(\d{4})$/);
-    if(form.id==='dependentForm'&&postal){
-      text('identity-owner-postal-first','郵便番号（前3桁）',postal[1],[1179,248,50,22]);
-      text('identity-owner-postal-last','郵便番号（後4桁）',postal[2],[1250,248,77,22]);
-    }
-    text('identity-employer-name','給与の支払者の名称',employer.name,header.employerName);
-    text('identity-employer-address','給与の支払者の所在地',employer.address,header.employerAddress);
-    const personBoxes={
-      fuyouDependent:{name:[305,588,248,63],kana:[305,556,248,22],relationship:[566,618,129,33],birthDate:[711,617,268,37],address:[1605,568,279,78]},
-      fuyouUnder16:{name:[306,1433,220,23],kana:[306,1409,220,19],relationship:[954,1415,45,38],birthDate:[1009,1414,132,39],address:[1155,1414,388,39]},
-      specificRelative:{name:[210,1153,298,32],kana:[210,1123,298,22],relationship:[931,1127,40,53],birthDate:[982,1127,178,53],address:[1172,1127,360,53]}
-    };
-    for(const section of form.sections||[]){
-      if(section.status==='not_applicable')continue;
-      const areas=formPreviewsForGuideSection(form.id,section);
-      for(const area of areas){
-        const contract=(section.contracts||[]).find(c=>area.id.endsWith(`-${c.id}`));
-        if(contract){
-          const amount=contract.fields.find(f=>f.key===`${contract.id}-amount`);
-          if(amount?.status!=='calculated'){notes.push(`${contract.index}件目の保険契約：支払額・支払った人の確認後に記入してください。`);continue;}
-          const region=area.id.slice(0,-contract.id.length-1),row=ROWS[region];
-          const top=row?.tops[contract.placement?.rowNumber-1];
-          if(top==null)continue;
-          for(const entry of area.overlays){
-            // The company cell starts after the vertical category-label column.
-            const placed=entry.key.endsWith('-companyName')&&region!=='quake'?{...entry,box:[182,entry.box[1],180,entry.box[3]]}:entry;
-            add(placed,top-row.origin);
-          }
-          continue;
-        }
-        const match=area.id.match(/^(fuyouDependent|fuyouUnder16|specificRelative)-(\d+)$/);
-        if(match){
-          const region=match[1],person=match[2];
-          const classification=section.fields.find(f=>f.key===`dependent-${person}-classification`||f.key===`specific-relative-${person}`);
-          if(classification?.status!=='calculated'){notes.push(`${person}人目の親族：記入要件の確認後に記入してください。`);continue;}
-          const row=ROWS[region],position=personRows[region]||0;
-          personRows[region]=position+1;
-          if(position>=row.tops.length){notes.push(`${person}人目の親族：用紙の行数を超えるため、会社に別紙の記入方法を確認してください。`);continue;}
-          for(const entry of area.overlays)add(entry,row.tops[position]-row.origin);
-          // Names use the same row allocation as the associated income.
-          const data=identity.dependents[Number(person)-1]||{},boxes=personBoxes[region],offset=row.tops[position]-row.origin;
-          for(const key of ['name','kana','relationship','birthDate','address']){
-            if(key==='birthDate'&&blocked.has(`dependent-${person}`))continue;
-            const value=key==='birthDate'?identityDateTextV3(data.birthDate):key==='address'?region==='specificRelative'&&data.addressMode==='same'?'':identityAddressV3(data,identity):data[key];
-            text(`identity-${region}-${person}-${key}`,`${person}人目の${labels[key]}`,value,boxes[key],offset);
-          }
-          notes.push(`${person}人目の親族の情報を${position+1}行目に表示しています。空欄の氏名等は同じ行へ記入してください。`);
-          continue;
-        }
-        if(form.id==='dependentForm'&&section.id==='spouse'&&section.status!=='calculated'){
-          notes.push('扶養控除等申告書のA欄：記入要件を会社に確認してから記入してください。');continue;
-        }
-        for(const entry of area.overlays)add(entry);
-        if(area.id==='combinedSpouse'){
-          text('identity-spouse-name','配偶者の氏名',identity.spouse.name,[936,460,339,41]);
-          text('identity-spouse-kana','配偶者のフリガナ',identity.spouse.kana,[936,427,339,25]);
-          if(!blocked.has('spouse'))text('identity-spouse-birth','配偶者の生年月日',identityDateTextV3(identity.spouse.birthDate),[1700,378,457,32]);
-          if(identity.spouse.addressMode!=='same')text('identity-spouse-address','配偶者の住所',identity.spouse.address,[1292,458,393,40]);
-        }
-        if(area.id==='spouseIncome'&&section.fields.some(f=>f.key==='spouse-salary-revenue'&&f.status==='calculated')){
-          // Salary-only spouse: the same known income goes in (1) and the total.
-          const income=area.overlays.find(entry=>entry.key==='spouse-income');
-          if(income)add({...income,key:'spouse-salary-income',box:[1362,589,191,29]});
-        }
-      }
-      for(const field of section.fields||[]){
-        if(field.status==='needs_confirmation')notes.push(`${field.label}：確認が必要なため、用紙の数字は空欄です。`);
-      }
-    }
-    notes.push(...(guide.identityWarnings||[]));
-    pages.push({id:form.id,title:form.title,asset,entries,notes:[...new Set(notes)],supplement:form.supplement||null});
-  }
-  return {pages,housingExcluded:(guide.forms||[]).some(f=>f.id==='housingForm')};
-}
-
-function renderOfficialPageSvgV3(page) {
-  const {asset}=page;
-  const values=page.entries.map(entry=>{
-    const [x,y,w,h]=entry.box,{size,lines}=entry.layout,text=entry.valueKind==='text';
-    const baseline=y+(h-lines.length*size*1.1)/2+size*.88;
-    return `<g data-form-key="${esc(entry.key)}"><title>${esc(entry.label)}：${esc(entry.text)}</title><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="white"/><text font-size="${size}" font-family="${text?'Meiryo, sans-serif':'Arial, Meiryo, sans-serif'}" font-weight="700" fill="#173e59" text-anchor="${text?'start':'end'}">${lines.map((line,i)=>`<tspan x="${text?x+4:x+w-4}" y="${baseline+i*size*1.1}">${esc(line)}</tspan>`).join('')}</text></g>`;
-  }).join('');
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${asset.width} ${asset.height}" role="img" aria-label="${esc(page.title)}。あなたの回答から作った記入例。未記入の欄があります。"><image href="${esc(asset.image)}" width="${asset.width}" height="${asset.height}"/>${values}</svg>`;
-}
-
-  Object.assign(app, { buildOfficialOutputV3, renderOfficialPageSvgV3 });
-}(window.YearEndApp));
-
-/* app-v3.js */
-(function (app) {
-  const { buildResult, buildFormGuide, traceWizard, questionGuide, formPreviewForQuestion, formPreviewsForGuideSection, renderFormPreviewSvg, contractAnswer, SAME_CONTRACT_HOLDER, renderInsuranceSupplement, CHAPTERS_V3, GLOSSARY_V3, choiceLabelV3, questionCopyV3, parseNumberV3, fieldPurposeV3, createJourneyV3, currentItemV3, startJourneyV3, editAnswerV3, submitAnswerV3, continueJourneyV3, backJourneyV3, buildOfficialOutputV3, renderOfficialPageSvgV3, createIdentityV3, syncIdentityV3, captureIdentityFormV3, validateIdentityV3, attachIdentityToGuideV3, renderIdentityEditorV3 } = app;
-
-
-
+  const { baseQuestionId, buildResult, buildFormGuide, WIZARD_PAGES, traceWizard, commitWizardAnswer, pageProgress, questionGuide, formPreviewForQuestion, formPreviewsForGuideSection, renderFormPreviewSvg, contractAnswer, SAME_CONTRACT_HOLDER, renderInsuranceSupplement } = app;
 
 
 
@@ -2046,169 +1576,112 @@ function renderOfficialPageSvgV3(page) {
 
 
 const root=document.querySelector('#app');
-const v2Url=document.body.dataset.v2Url||'../v2/index.html';
-let journey=createJourneyV3(),checked={},annexExpanded=false,expandedImages={},hiddenValues={},identity=createIdentityV3(),identityDraft=null;
-const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const human=value=>Array.isArray(value)?value.map(choiceLabelV3).join('、'):typeof value==='number'?value.toLocaleString('ja-JP'):choiceLabelV3(String(value??''));
-const statusText={calculated:'計算できました',not_applicable:'今回は対象外です',needs_confirmation:'会社担当者へ確認してください',incomplete:'用紙にご自身で記入してください'};
-
-function currentGuide(){return attachIdentityToGuideV3(buildFormGuide(buildResult(journey.answers)),identity,journey.answers);}
-function namedSupplement(supplement,expanded){
- const html=renderInsuranceSupplement(supplement,expanded);
- const name=identity.taxpayer.name||'________________________',employer=identity.employer.name||'________________________';
- return html.replace('提出者氏名：________________________　勤務先：________________________',()=>`提出者氏名：${esc(name)}　勤務先：${esc(employer)}`);
+let answers={}, currentPage=0, started=false, editingId=null, multiDraft={}, checked={}, openMapId=null, expandedImages={}, hiddenValues={};
+let annexExpanded=false;
+const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const human=value=>Array.isArray(value)?value.join('、'):typeof value==='number'?`${value.toLocaleString('ja-JP')}`:String(value);
+const statusText={calculated:'計算できました',not_applicable:'今回は対象外です',needs_confirmation:'会社担当者へ確認してください',incomplete:'用紙に記入してください'};
+function questionTitle(id,q){
+ if(id.startsWith('dep:'))return `${id.split(':')[1]}人目の家族：${q.text}`;
+ if(id.startsWith('life:'))return `${id.split(':')[1]}件目の生命保険：${q.text}`;
+ if(id.startsWith('earthquake:'))return `${id.split(':')[1]}件目の地震保険：${q.text}`;
+ if(id.startsWith('disability:'))return `${id.split(':')[1]==='spouse'?'配偶者':`${id.split(':')[2]}人目の家族`}：${q.text}`;
+ return q.text;
 }
-function glossary(){return `<details class="v3-glossary"><summary>言葉が分からないとき</summary><dl>${GLOSSARY_V3.map(([word,meaning])=>`<dt>${esc(word)}</dt><dd>${esc(meaning)}</dd>`).join('')}</dl></details>`;}
 function renderHome(){
- root.innerHTML=`<article class="card v3-home"><p class="eyebrow">令和8年・2026年分 ／ やさしい記入ナビ v3</p><h1 tabindex="-1">質問に答えて、<br>書類に書く内容を整理しよう</h1><p class="v3-lead">難しい計算はナビが手伝います。<br>分からないことは、あとで会社に確認できます。</p><button class="button v3-primary" data-action="start">一つずつ質問に答える</button><ol class="v3-three-steps"><li><strong>答える</strong><span>書類を見ながら、一問ずつ</span></li><li><strong>書き写す</strong><span>あなたの金額と、書く場所を確認</span></li><li><strong>提出する</strong><span>証明書をそろえて、会社へ</span></li></ol><details class="v3-preparation" open><summary>手元にあると便利なもの</summary><ul><li>会社から配られた申告書</li><li>今年の給与明細（転職した方は前の会社の源泉徴収票も）</li><li>保険やiDeCoなどの証明書（ある方だけ）</li></ul><p>今そろっていなくても始められます。画面を閉じると回答は消えるので、最後に記入ガイドをPDF保存してください。</p></details>${glossary()}<p class="v3-footnote">作るのは書類に書くための案内です。会社の用紙への記入と提出は、あなたが行います。</p><a href="${esc(v2Url)}">前のバージョン（v2）を開く</a></article>`;
+ root.innerHTML=`<article class="card v2-home"><div class="eyebrow">令和8年分 · バージョン2</div><h1>書類を見ながら、ページごとに入力</h1><p>国税庁の年末調整計算シートと申告書の入力項目に沿って、必要な質問だけを表示します。質問と同時に、対応する令和8年分申告書の実際の欄を示します。黄色は記入候補、青色は判定に関連する欄です。</p><ol class="v2-home-steps">${WIZARD_PAGES.map(p=>`<li>${esc(p.title)}</li>`).join('')}</ol><div class="notice">判定のための質問は回答をそのまま申告書へ書きません。保険契約の契約者・受取人等の氏名は、記入例を作るために入力できます。住所・マイナンバーは集めません。回答は保存・送信されず、計算シートへの自動転記も行いません。</div><button class="button v2-primary" data-action="start">入力をはじめる</button></article>`;
 }
-function progress(chapter){
- const index=CHAPTERS_V3.findIndex(c=>c.id===chapter.id);
- return `<div class="v3-progress"><p>いま：${index+1} / ${CHAPTERS_V3.length}　<strong>${esc(chapter.title)}</strong></p><progress max="${CHAPTERS_V3.length}" value="${index}" aria-label="完了したまとまり">${index}</progress><details><summary>全体の流れを見る</summary><ol>${CHAPTERS_V3.map((c,i)=>`<li ${i===index?'aria-current="step"':''}>${esc(c.title)}${i===index?'（いまここ）':''}</li>`).join('')}</ol></details></div>`;
-}
-function reviewList(items){return `<dl class="v3-review-list">${items.map(item=>{const copy=questionCopyV3(item.id);return `<div><dt>${copy.who?`${esc(copy.who)}：`:''}${esc(copy.title)}</dt><dd><strong>${esc(human(contractAnswer(item.id,journey.answers)))}${item.question.input==='money'&&typeof item.value==='number'?'円':item.question.input==='age'&&typeof item.value==='number'?'歳':''}</strong><button class="button tertiary" data-edit="${esc(item.id)}">この回答を変える</button></dd></div>`;}).join('')}</dl>`;}
-function history(trace){return `<details class="v3-history"><summary>回答を見直す（${trace.items.filter(i=>i.answered).length}問回答済み）</summary>${reviewList(trace.items.filter(i=>i.answered))}</details>`;}
-function controls(item,copy){
- const q=item.question,value=contractAnswer(item.id,journey.answers),id='v3-answer';
- const unknown=q.input&&q.input!=='count'?'<button type="button" class="button secondary v3-unknown" data-action="unknown">分からない・あとで確認して進む</button>':'';
- if(q.input){
-  const unit=q.input==='money'?'円':q.input==='age'?'歳':q.input==='count'?(q.unit==='件数'?'件':q.unit||'人'):'';
-  const holder=q.reuseHolder?contractAnswer(item.id.replace(/:[^:]+$/,':holderName'),journey.answers):null;
-  const reuse=typeof holder==='string'&&holder.trim()&&holder!=='分からない';
-  const display=typeof value==='number'?value.toLocaleString('ja-JP'):value&&value!=='分からない'?value:'';
-  return `<label for="${id}">${q.input==='text'?esc(q.entryLabel||'書類に書く内容'):q.input==='money'?'金額（円）':q.input==='age'?'年末の年齢（歳）':`数（${esc(unit)}）`}</label><p id="v3-format" class="v3-format">${q.input==='text'?'証明書などの文字を、そのまま入力します。':q.input==='money'?'円で入力します。カンマ・全角数字も使えます。':q.input==='age'?'年末時点の年齢を、数字で入力します。':'これから入力する数を、数字で入力します。'}</p><div class="v3-input-with-unit"><input id="${id}" name="answer" type="text" ${q.input!=='text'?'inputmode="numeric"':'maxlength="80"'} aria-describedby="v3-help v3-example v3-format v3-error" autocomplete="off" value="${esc(display)}"><span>${esc(unit)}</span></div><button class="button v3-primary" type="submit">この回答で次へ</button>${reuse?`<button class="button secondary" type="button" data-action="reuse">契約者と同じ（${esc(holder)}）</button>`:''}${unknown}`;
+function questionControls(item){
+ const {id,question:q}=item;
+ if(q.input==='text'){
+  const holder=contractAnswer(id.replace(/:[^:]+$/,':holderName'),answers);
+  const reuse=q.reuseHolder&&typeof holder==='string'&&holder!=='分からない'&&holder.trim();
+  return `<form class="v2-input-form" data-text-route="${esc(id)}"><label>${esc(q.text)}<input type="text" maxlength="80" value="${item.value===undefined||item.value==='分からない'?'':esc(contractAnswer(id,answers)||'')}" autocomplete="off" required></label><button class="button" type="submit">この回答を確定</button>${reuse?`<button class="button secondary" type="button" data-reuse-holder="${esc(id)}">契約者と同じ（${esc(holder)}）</button>`:''}<button class="button secondary" type="button" data-unknown="${esc(id)}">分からない・後で確認</button><p class="v2-error" role="alert" hidden></p></form>`;
  }
- return `<fieldset><legend class="v3-control-legend">${q.multi?'当てはまるものをすべて選ぶ':'一つ選ぶ'}</legend><div class="v3-choices">${q.choices.map((choice,i)=>`<label class="v3-choice"><input type="${q.multi?'checkbox':'radio'}" name="answer" value="${esc(choice)}" ${q.multi?Array.isArray(value)&&value.includes(choice)?'checked':'':value===choice?'checked':''} aria-describedby="v3-help v3-error"><span>${esc(choiceLabelV3(choice))}</span></label>`).join('')}</div></fieldset><button class="button v3-primary" type="submit">この回答で次へ</button>`;
+ if(q.input){const min=q.input==='count'?1:0,max=q.input==='count'?(q.max??10):q.input==='age'?120:999999999;return `<form class="v2-input-form" data-number-route="${esc(id)}"><label>${q.input==='money'?'金額（円）':q.input==='age'?'年齢':q.unit||'人数'}<input type="number" inputmode="numeric" min="${min}" max="${max}" step="1" value="${typeof item.value==='number'?esc(item.value):''}" required></label><button class="button" type="submit">この回答を確定</button>${q.input!=='count'?`<button class="button secondary" type="button" data-unknown="${esc(id)}">${q.input==='age'?'年齢が分からない':'金額が分からない'}</button>`:''}<p class="v2-error" role="alert" hidden></p></form>`;}
+ if(q.multi){const selected=multiDraft[id]||(Array.isArray(item.value)?item.value:[]);return `<div class="v2-options">${q.choices.map(choice=>`<button class="button secondary" data-multi-route="${esc(id)}" data-multi-value="${esc(choice)}" aria-pressed="${selected.includes(choice)}">${selected.includes(choice)?'✓ ':''}${esc(choice)}</button>`).join('')}</div><button class="button v2-confirm" data-confirm-multi="${esc(id)}">選択を確定</button><p class="v2-error" role="alert" hidden></p>`;}
+ return `<div class="v2-options" role="group" aria-label="回答">${q.choices.map(choice=>`<button class="button secondary" data-choice-route="${esc(id)}" data-choice-value="${esc(choice)}">${esc(choice)}</button>`).join('')}</div>`;
 }
+function questionCard(item,activeId){
+ const {id,question:q,answered}=item,open=!answered||editingId===id,guide=questionGuide(id),active=id===activeId;
+ return `<section class="v2-question ${open?'v2-question-open':'v2-question-done'} ${active?'v2-focused':''}"><div class="v2-question-head"><div><p class="v2-small">${active?'★ 表示中の申告書で確認':answered?'回答済み':'入力する質問'}</p><h3>${esc(questionTitle(id,q))}</h3></div>${answered&&!open?`<button class="button tertiary" data-edit="${esc(id)}">変更</button>`:''}</div>${answered&&!open?`<p class="v2-answer">${esc(human(contractAnswer(id,answers)))}</p>`:`${q.hint?`<p class="hint">${esc(q.hint)}</p>`:''}<div class="v2-guide"><div><strong>見る資料</strong><span>${esc(guide.source)}</span></div><div><strong>入力する内容</strong><span>${esc(guide.input)}</span></div><div><strong>記入先の目安</strong><span>${esc(guide.destination)}</span></div></div>${questionControls(item)}`}</section>`;
+}
+function paperImage(area,showValues=true){return renderFormPreviewSvg(area,showValues);}
 function previewPanel(item){
- const preview=formPreviewForQuestion(item.id,journey.answers);
- return `<aside class="v3-paper card" aria-label="用紙の書く場所"><p class="eyebrow">用紙で見ると、ここ</p><h2>${esc(preview.section)}</h2><p class="v3-paper-mode">${preview.directEntry?'黄色の枠は、この入力に対応する欄です。最後に書く内容をまとめて確認できます。':'いまは、どの欄が必要かを確かめています。この回答をそのまま紙へ書く必要はありません。'}</p><div class="v2-paper-frame">${renderFormPreviewSvg({...preview,title:preview.section})}</div><details class="v3-image-detail"><summary>書く場所を大きく見る</summary><div class="v3-image-scroll">${renderFormPreviewSvg({...preview,title:preview.section})}</div><p>${esc(preview.example)}</p></details>${preview.note?`<p class="notice">${esc(preview.note)}</p>`:''}<p class="v3-footnote">国税庁の令和8年分${preview.asset.kind==='blank'?'申告書':'記載例'}。枠はナビが付けた目印です。</p><a href="${esc(preview.asset.pdf)}" target="_blank" rel="noopener">用紙の全体をPDFで見る</a></aside>`;
+ const preview=formPreviewForQuestion(item.id,answers),entered=item.answered?esc(human(contractAnswer(item.id,answers)))+(item.question.input==='money'&&typeof item.value==='number'?'円':''):null;
+ return `<aside class="v2-paper-panel" aria-label="現在の質問に対応する申告書の記入欄"><div class="eyebrow">今、どの欄を確認していますか？</div><h2>${esc(preview.section)}</h2><p class="v2-paper-question">${esc(questionTitle(item.id,item.question))}</p><p class="v2-paper-mode ${preview.directEntry?'v2-direct':'v2-decision'}">${preview.directEntry?'★ 黄色の枠が記入候補の欄です':preview.mark?'◇ 青色の枠は判定に関連する欄です。回答をそのまま転記しません':'◇ この質問に共通の記入欄はありません。回答をそのまま転記しません'}</p>${preview.note?`<p class="notice">${esc(preview.note)}</p>`:''}<div class="v2-paper-frame">${paperImage({...preview,title:preview.section})}</div><p class="v2-paper-caption">${preview.asset.kind==='blank'?'国税庁 令和8年分の空欄様式':'国税庁 令和8年分の記載例'}から表示。${preview.mark?'枠はアプリが示す確認範囲です。':''}</p><details class="v2-zoom"><summary>欄を拡大して読む</summary><div class="v2-zoom-frame">${paperImage({...preview,title:preview.section})}</div></details><div class="v2-paper-example"><h3>記入例（架空の内容）</h3><p>${esc(preview.example)}</p>${entered?`<p><strong>あなたの回答：</strong>${entered}</p>`:''}</div>${preview.secondary?`<details class="v2-related-paper"><summary>関連するもう一つの欄を見る</summary><h3>${esc(preview.secondary.title)}</h3>${paperImage(preview.secondary)}<p>${esc(preview.secondary.example)}</p><p>両方の欄の要件を結果画面で確認してください。</p></details>`:''}<a class="v2-paper-link" href="${esc(preview.asset.pdf)}" target="_blank" rel="noopener">この申告書の全体を見る（PDF）</a></aside>`;
 }
-function renderQuestion(){
- const trace=traceWizard(journey.answers),item=currentItemV3(journey);
- if(!item){renderResult();return;}
- const copy=questionCopyV3(item.id);
- root.innerHTML=`${progress(copy.chapter)}<div class="v3-question-layout"><article class="card v3-question"><p class="eyebrow">${esc(copy.who||copy.chapter.title)}${journey.returnToResult?' ／ 回答の変更':''}</p><h1 tabindex="-1">${esc(copy.title)}</h1><p class="v3-help" id="v3-help">${esc(copy.help)}</p><p class="v3-example" id="v3-example">${copy.example?`例・見るポイント：${esc(copy.example)}`:''}</p><p class="v3-source">手元で見るもの：${esc(questionGuide(item.id).source)}</p><form data-question="${esc(item.id)}" novalidate>${controls(item,copy)}<p class="v3-error" id="v3-error" role="alert" hidden></p></form><details class="v3-official"><summary>申告書の言い方を確認する</summary><p>${esc(copy.officialQuestion)}</p></details>${glossary()}<button class="button tertiary" data-action="back" ${trace.items[0]?.id===item.id?'disabled':''}>前の質問へ戻る</button>${journey.returnToResult?'<button class="button tertiary" data-action="cancel-edit">変更せず結果へ戻る</button>':''}</article>${previewPanel(item)}</div>${history(trace)}`;
-}
-function renderCheckpoint(){
- const trace=traceWizard(journey.answers),chapter=CHAPTERS_V3.find(c=>c.id===journey.checkpointPage);
- const next=trace.items.find(x=>x.id===journey.currentId),nextCopy=next?questionCopyV3(next.id):null;
- const items=trace.items.filter(x=>x.page===chapter.id&&x.answered),unknown=items.filter(x=>x.value==='分からない'||Array.isArray(x.value)&&x.value.includes('分からない'));
- root.innerHTML=`<article class="card v3-checkpoint"><p class="eyebrow">ひとまとまり終わりました</p><h1 tabindex="-1">${esc(chapter.title)}の回答を確認</h1><p>入力した内容です。違っていたら、ここで直せます。</p>${unknown.length?'<p class="v3-confirm-note">分からないと答えたことは、最後に「会社へ確認すること」にまとめます。</p>':''}${reviewList(items)}<div class="v3-next-topic"><strong>次は：${esc(nextCopy?.chapter.title||'書類に書く内容')}</strong><p>${esc(nextCopy?.chapter.lead||'あなたの回答から、使う書類・金額・証明書をまとめます。')}</p></div><button class="button v3-primary" data-action="continue">${nextCopy?'次のまとまりへ進む':'書類に書く内容を見る'}</button><button class="button tertiary" data-action="back">前の質問へ戻る</button></article>`;
-}
-function renderField(field){
- const confirmed=field.status==='calculated',known=confirmed&&field.value!=null;
- const value=known?field.value:field.status==='incomplete'?'用紙にご自身で記入':field.status==='not_applicable'?'今回は記入不要':'まだ書き写さないでください';
- return `<div class="v3-transfer-field v3-field-${esc(field.status)}"><p class="v3-field-purpose">${esc(fieldPurposeV3(field))}</p><span class="v3-field-label">${esc(field.label)}</span><strong>${esc(value)}</strong><small>${esc(field.inputOnly&&confirmed?'入力した内容です':statusText[field.status]||statusText.needs_confirmation)}</small>${field.note?`<p>${esc(field.note)}</p>`:''}</div>`;
-}
-function resultImages(form){return form.sections.map(section=>{
- const areas=formPreviewsForGuideSection(form.id,section);
- return areas.length?`<section class="v3-map-section"><h4>${esc(section.title)}</h4>${areas.map(area=>{const key=`${form.id}:${section.id}:${area.id}`,expanded=Boolean(expandedImages[key]),show=!hiddenValues[key];return `<figure><figcaption>${esc(area.title)}</figcaption><div class="v3-map-actions"><button class="button secondary" data-toggle-values="${esc(key)}">${show?'記入内容を隠す':'あなたの記入内容を表示'}</button><button class="button secondary" data-expand-image="${esc(key)}" aria-expanded="${expanded}">${expanded?'標準サイズに戻す':'この欄を大きく見る'}</button></div><div class="v2-paper-frame ${expanded?'v3-image-scroll':''}">${renderFormPreviewSvg(area,show)}</div><p>青い文字は、あなたの回答から作った記入候補です。「要確認」は、会社に確認してから書きます。</p>${area.note?`<p class="notice">${esc(area.note)}</p>`:''}<a href="${esc(area.asset.pdf)}" target="_blank" rel="noopener">国税庁の${area.asset.kind==='blank'?'空欄用紙':'記載例'}をPDFで見る</a></figure>`;}).join('')}</section>`:'';
- }).join('');}
-function officialOutput(guide){
- const output=buildOfficialOutputV3(guide);
- return `<section class="v3-official-output" aria-labelledby="v3-paper-title"><header class="v3-official-controls"><h2 id="v3-paper-title">用紙の形で、あなたの記入例を見る</h2><p>国税庁の用紙画像に、回答済みの内容と計算済みの数字を重ねています。<strong>最後の入力欄で名前や住所も反映できます。空欄と該当チェックはご自身で確認・記入してください。</strong></p><p>現在の記入ガイドに加えて、こちらもPDFにできます。画像から作るPDFなので、保存後に文字を編集する機能はありません。表面だけの記入例です。裏面の説明は「公式PDF」で確認できます。</p><fieldset><legend>PDFにする用紙を選ぶ</legend>${output.pages.map(page=>`<label class="v3-check"><input type="checkbox" data-paper-select="${esc(page.id)}" checked><span>${esc(page.asset.title)}</span></label>`).join('')}</fieldset><button class="button v3-primary" data-action="print-official">選んだ用紙の記入例をPDF保存・印刷</button><button class="button secondary" data-action="print">説明つきの記入ガイドをPDF保存・印刷</button><p>印刷画面で「PDFとして保存」を選びます。A4横・倍率100％・ヘッダーとフッターなしを確認してください。会社指定の用紙や提出方法も確認してください。</p><p id="v3-paper-error" class="v3-error" role="alert" hidden></p>${output.housingExcluded?'<p class="notice">住宅ローン用紙は別人の記載例なので、この数字入り出力には含めません。税務署から交付されたご自身の申告書を使ってください。</p>':''}</header>${output.pages.map(page=>`<section class="v3-official-document" data-official-document="${esc(page.id)}"><article class="v3-official-sheet"><p class="v3-paper-caption">令和8年分・あなたの記入例（未完成）／空欄・該当チェックはご自身で確認・記入</p><h3 class="v3-paper-screen-title">${esc(page.asset.title)}</h3>${renderOfficialPageSvgV3(page)}</article><div class="v3-official-notes"><h4>この用紙で、あとから記入・確認すること</h4><p>入力して反映した氏名・住所・勤務先は用紙に表示します。未入力の欄と個人番号はご自身で記入してください。該当区分のチェック・判定区分・計算の途中欄も、ご自身で確認して記入してください。</p>${page.notes.length?`<ul>${page.notes.map(note=>`<li>${esc(note)}</li>`).join('')}</ul>`:''}<a href="${esc(page.asset.pdf)}" target="_blank" rel="noopener">表面・裏面を公式PDFで確認する</a></div>${namedSupplement(page.supplement,true)}</section>`).join('')}<section class="v3-official-common-notes"><h3>会社へ確認してから提出してください</h3><p>これは回答から作った記入例です。空欄と該当チェックを確認し、証明書を添えて提出します。</p>${guide.staffConfirmations.length?`<ul>${[...new Set(guide.staffConfirmations)].map(note=>`<li>${esc(note)}</li>`).join('')}</ul>`:'<p>回答から追加の担当者確認事項はありません。未回答の個人情報欄などはご自身で記入してください。</p>'}</section></section>`;
+function progressNav(trace){const progress=pageProgress(trace);return `<nav class="v2-progress" aria-label="入力ページ">${WIZARD_PAGES.map((p,i)=>`<button type="button" data-page="${i}" class="v2-page-link ${i===currentPage?'is-current':''}" ${progress[i].status==='locked'?'disabled':''} aria-current="${i===currentPage?'step':'false'}"><span>${String(i+1).padStart(2,'0')}</span>${esc(p.title)}${progress[i].status==='done'?' ✓':''}</button>`).join('')}</nav>`;}
+function renderPage(){
+ const trace=traceWizard(answers);
+ if(trace.terminal==='end'){root.innerHTML=`<article class="card"><div class="eyebrow">対象確認</div><h1>この会社での年末調整について確認してください</h1><p>「この会社で年末調整を受けない」と回答しました。勤務先または税務署の案内をご確認ください。</p><button class="button secondary" data-action="restart">最初からやり直す</button></article>`;return;}
+ if(trace.terminal==='result'&&currentPage>=WIZARD_PAGES.length){renderResult();return;}
+ const pending=trace.pending?WIZARD_PAGES.findIndex(p=>p.id===trace.items.at(-1).page):WIZARD_PAGES.length;
+ if(currentPage>pending)currentPage=pending;
+ const page=WIZARD_PAGES[currentPage],items=trace.items.filter(x=>x.page===page.id);
+ const activeItem=items.find(x=>x.id===editingId)||items.find(x=>!x.answered)||items.at(-1);
+ const activePreview=activeItem?formPreviewForQuestion(activeItem.id,answers):null;
+ const complete=items.length>0&&items.every(x=>x.answered);
+ const contractPattern=/^(life|earthquake):\d+:/;
+ const contractPrefix=(activeItem?.id.match(contractPattern)||items.findLast(item=>contractPattern.test(item.id))?.id.match(contractPattern))?.[0];
+ const otherContracts=new Map();
+ if(contractPrefix)for(const item of items){const prefix=item.id.match(/^(life|earthquake):\d+:/)?.[0];if(prefix&&prefix!==contractPrefix&&!otherContracts.has(prefix))otherContracts.set(prefix,item);}
+ const shownItems=contractPrefix?items.filter(item=>!item.id.match(/^(life|earthquake):\d+:/)||item.id.startsWith(contractPrefix)):items;
+ const contractSummary=otherContracts.size?'<section class="v2-contract-summary"><h3>ほかの入力済み契約</h3><p>変更したい契約を選ぶと、その契約の質問を表示します。</p>'+[...otherContracts.values()].map(item=>{const p=item.id.replace(/:[^:]+$/,':');return '<button class="button secondary" data-edit="'+esc(item.id)+'">'+p.split(':')[1]+'件目：'+esc([answers[p+'companyName'],answers[p+'type'],typeof answers[p+'amount']==='number'?human(answers[p+'amount'])+'円':null].filter(Boolean).join('／')||'入力途中')+'</button>';}).join('')+'</section>':'';
+ root.innerHTML=`<div class="v2-layout">${progressNav(trace)}<main class="v2-main"><article class="card v2-page"><div class="eyebrow">ページ ${currentPage+1} / ${WIZARD_PAGES.length}</div><h1>${esc(page.title)}</h1><p class="v2-lead">${esc(page.lead)}</p>${activePreview?`<p class="v2-current-topic">今見ている欄：<strong>${esc(activePreview.section)}</strong><span>${activePreview.directEntry?'記入候補':'判定用'}</span></p>`:''}<div class="v2-source"><span>準備する資料：${esc(page.source)}</span><a href="${esc(page.official)}" target="_blank" rel="noopener">国税庁の記載例を開く</a></div><div class="v2-destination"><strong>このページの入力先</strong><p>${esc(page.destination)}</p></div>${items.length?shownItems.map(item=>questionCard(item,activeItem?.id)).join(''):`<p class="notice">このページの追加質問はありません。</p>`}${contractSummary}<div class="v2-nav"><button class="button secondary" data-action="previous" ${currentPage===0?'disabled':''}>前のページ</button>${complete?`<button class="button" data-action="next">${currentPage===WIZARD_PAGES.length-1?'結果を見る':'次のページ'}</button>`:`<span class="v2-help">表示された質問に回答すると、次へ進めます。</span>`}</div></article>${activeItem?previewPanel(activeItem):''}</main></div>`;
 }
 function renderResult(){
- identity=syncIdentityV3(identity,journey.answers);
- const guide=currentGuide();
- const shortNames={dependentForm:'あなたと家族を書く用紙',combinedForm:'所得と控除額を書く用紙',insuranceForm:'保険料などを書く用紙',housingForm:'住宅ローンの用紙'};
- const card=form=>`<section class="v3-result-card" id="v3-form-${esc(form.id)}"><p class="eyebrow">${esc(shortNames[form.id]||'用意する書類')}</p><h3>${esc(form.title)}</h3>${form.notice?`<p class="notice">${esc(form.notice)}</p>`:''}${form.sections.map(s=>{const fields=s.fields.filter(f=>f.status!=='not_applicable');return fields.length?`<section class="v3-result-section"><h4>${esc(s.title)}</h4>${s.id==='life-insurance'||s.id==='earthquake'?'<p class="v3-money-note">支払った金額は「保険料」の欄へ。計算後の控除額は「控除額」の欄へ。それぞれ別の金額です。</p>':''}${fields.map(renderField).join('')}${(s.contracts||[]).map(c=>`<details class="v3-contract"><summary>${c.index}件目の契約の書く内容</summary><p>${esc(c.placement.label)}</p>${c.fields.filter(f=>f.status!=='not_applicable').map(renderField).join('')}</details>`).join('')}</section>`:'';}).join('')}<details class="v3-result-images" data-result-map="${esc(form.id)}"><summary>実際の用紙で、書く場所とあなたの金額を見る</summary>${resultImages(form)}</details>${namedSupplement(form.supplement,annexExpanded)}</section>`;
- root.innerHTML=`<article class="card v3-results"><p class="eyebrow">回答が終わりました ／ ここから用紙に書きます</p><h1 tabindex="-1">書類に書く内容を確認しよう</h1><p>下の内容を、会社から配られた用紙へ書き写します。<strong>「会社へ確認」は、確認してから書いてください。</strong></p><div class="v3-print-actions"><button class="button v3-primary" data-action="print">記入ガイドをPDF保存・印刷</button><p>印刷画面で「PDFとして保存」を選びます。公式申告書の完成版ではなく、書く内容のガイドです。</p></div><section><h2>① あなたが記入する書類</h2>${guide.forms.map(f=>`<a class="v3-form-link" href="#v3-form-${esc(f.id)}"><strong>${esc(shortNames[f.id]||f.title)}</strong><span>${esc(f.title)}</span><span>書く内容を確認する</span></a>`).join('')}</section><section><h2>② 記入する内容・金額</h2><p>氏名・住所などは、この画面の下にある「最後に、名前や住所を用紙へ入れる」から追加できます。空欄は手書きしてください。</p>${guide.forms.map(card).join('')}</section><section><h2>③ 用意する書類・証明書</h2>${guide.requiredDocuments.length?`<ul>${[...new Set(guide.requiredDocuments)].map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<p>今回の回答では、追加の証明書はありません。</p>'}</section><section><h2>④ 会社担当者へ確認すること</h2>${guide.staffConfirmations.length?`<p>この一覧を会社の年末調整担当者に見せてください。</p><ul class="v3-confirm-list">${[...new Set(guide.staffConfirmations)].map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<p>今回の回答からは、追加の確認事項はありません。</p>'}</section><section><h2>⑤ 提出前チェック</h2><p>紙の書類を見ながら確認してください。チェックはこの画面だけで使います。</p>${guide.submissionChecklist.map((x,i)=>`<label class="v3-check"><input type="checkbox" data-check="${i}" ${checked[i]?'checked':''}><span>${esc(x)}</span></label>`).join('')}<p class="v3-confirm-note">確認事項が残っているときは、会社に相談してから提出します。PDFの保存だけでは、会社へ提出されません。</p></section><details class="v3-history"><summary>回答を見直す・変更する</summary>${reviewList(traceWizard(journey.answers).items.filter(x=>x.answered))}</details>${glossary()}<button class="button tertiary" data-action="back">最後の質問へ戻る</button><button class="button tertiary" data-action="restart">最初からやり直す</button></article>`;
- root.querySelector('.v3-results').insertAdjacentHTML('beforeend',renderIdentityEditorV3(identityDraft||identity,journey.answers)+officialOutput(guide));
+ const result=buildResult(answers),guide=buildFormGuide(result);
+ const field=f=>{
+  const value=f.value==null?f.status==='incomplete'?'ご自身で記入':f.status==='not_applicable'?'今回は対象外':'要確認':f.value;
+  return `<div class="v2-field v2-field-${esc(f.status)}"><span>${esc(f.label)}</span><strong>${esc(value)}</strong><small>${esc(statusText[f.status]||statusText.needs_confirmation)}</small>${f.note?`<p>${esc(f.note)}</p>`:''}</div>`;
+ };
+ const visibleFields=s=>s.fields.filter(f=>f.status!=='not_applicable');
+ const contractDetails=s=>(s.contracts||[]).map(c=>`<section class="v2-contract-detail"><h5>${c.index}件目の契約：${esc(c.category||'区分は要確認')}</h5><p class="v2-placement">${esc(c.placement.label)}</p><p>${esc(statusText[c.status]||statusText.needs_confirmation)}</p>${c.fields.filter(f=>f.status!=='not_applicable').map(field).join('')}</section>`).join('');
+ const mapImage=area=>{
+  const key=area.viewKey,expanded=Boolean(expandedImages[key]),shown=!hiddenValues[key],hasValues=area.overlays.length>0,hasText=area.overlays.some(e=>e.valueKind==='text');
+  return `<figure class="v2-map-image"><figcaption>${esc(area.title)}</figcaption><div class="v2-map-image-actions">${hasValues?`<button type="button" class="button secondary" data-toggle-values="${esc(key)}" aria-pressed="${shown}">${hasText?(shown?'記入内容を隠す':'あなたの記入内容を表示'):(shown?'金額を隠す':'あなたの金額を表示')}</button>`:''}<button type="button" class="button secondary" data-expand-image="${esc(key)}" aria-expanded="${expanded}">${expanded?'標準サイズに戻す':'この欄を大きく見る'}</button></div><div class="v2-paper-frame v2-map-image-scroll ${expanded?'is-expanded':''}">${paperImage(area,shown)}</div><p class="v2-paper-caption">${area.asset.kind==='blank'?'国税庁の令和8年分空欄様式':'国税庁の令和8年分記載例'}。${area.mark?`${area.directEntry?'黄色':'青色'}の枠はアプリが示す確認範囲です。`:''}</p>${hasValues?'<p class="v2-map-value-note">青字はあなたの回答・計算結果から作った記入候補です（名称・氏名・金額。金額は円単位）。「要確認」は転記前に会社担当者へ確認してください。</p>':area.example?`<p class="v2-map-hint">${esc(area.example)}</p>`:''}${area.note?`<p class="v2-map-hint">${esc(area.note)}</p>`:''}<a class="v2-paper-link" href="${esc(area.asset.pdf)}" target="_blank" rel="noopener">${area.asset.kind==='blank'?'空欄の申告書全体を見る（PDF）':'国税庁の記載例全体を見る（PDF）'}</a></figure>`;
+ };
+ const map=form=>`<div class="v2-form-map" id="v2-map-${esc(form.id)}"><p>回答に対応する令和8年分申告書の実際の欄へ、確認できた金額を重ねた記入例です。元の国税庁PDFは変更していません。住宅ローンは国税庁の記載例です。</p>${form.sections.filter(s=>visibleFields(s).length).map(s=>`<div class="v2-form-map-section"><h4>${esc(s.title)}</h4>${formPreviewsForGuideSection(form.id,s).map(area=>mapImage({...area,viewKey:`${form.id}:${s.id}:${area.id}`})).join('')}</div>`).join('')}</div>`;
+ const card=form=>`<section class="v2-result-card ${form.supplement?.required?'has-supplement':''}" id="v2-form-${esc(form.id)}"><h3>${esc(form.title)}</h3><p class="v2-form-status">${esc(statusText[form.status]||statusText.needs_confirmation)}</p>${form.notice?`<p class="notice">${esc(form.notice)}</p>`:''}${form.sections.filter(s=>visibleFields(s).length).map(s=>`<div class="v2-result-section"><h4>${esc(s.title)}</h4>${visibleFields(s).map(field).join('')}${contractDetails(s)}</div>`).join('')}<button type="button" class="button v2-map-open" data-map="${esc(form.id)}" aria-controls="v2-map-${esc(form.id)}" aria-expanded="${openMapId===form.id}">${openMapId===form.id?'記入例を閉じる':'記入場所を見る（金額入り）'}</button>${openMapId===form.id?map(form):''}${renderInsuranceSupplement(form.supplement,annexExpanded)}</section>`;
+ root.innerHTML=`<article class="card v2-results"><div class="eyebrow">バージョン2 · 入力結果</div><p class="v2-print-heading">令和8年分 年末調整おたすけナビ v2</p><h1>申告書へ記入する内容</h1><p>申告書ごとに、回答から分かった記入内容と金額を表示しています。支払額と計算後の控除額は別の行です。要確認の金額は転記せず、会社担当者へ確認してください。</p><div class="v2-print-actions"><button class="button" type="button" data-action="print">PDFとして保存</button><p>印刷画面で保存先を「PDFとして保存」にしてください。記入内容・必要書類・確認事項をA4の記入ガイドとして保存できます。</p></div><p class="v2-print-note">これは記入用の案内です。公式申告書そのものではありません。要確認の項目は転記前に会社担当者へ確認してください。</p><section><h2>① あなたが記入する書類</h2>${guide.forms.map(f=>`<a class="v2-form-name" href="#v2-form-${esc(f.id)}">${esc(f.title)}<span>記入内容へ ↓</span></a>`).join('')}</section><section class="v2-entry-content"><h2>② 記入する内容・金額</h2>${guide.forms.map(card).join('')}</section><section><h2>③ 用意する書類・証明書</h2>${guide.requiredDocuments.length?`<ul>${guide.requiredDocuments.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<p>回答から追加で必要になった証明書はありません。</p>'}</section><section><h2>④ 会社担当者へ確認すること</h2>${guide.staffConfirmations.length?`<ul>${guide.staffConfirmations.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<p>回答から追加の確認事項はありません。</p>'}</section><section><h2>⑤ 提出前チェック</h2>${guide.submissionChecklist.map((x,i)=>`<label class="v2-check"><input type="checkbox" data-check="${i}" ${checked[i]?'checked':''}>${esc(x)}</label>`).join('')}</section><div class="v2-nav"><button class="button secondary" data-action="previous">前のページへ戻る</button><button class="button secondary" data-action="restart">最初からやり直す</button></div></article>`;
 }
-function render(){
- if(journey.mode==='home')renderHome();
- else if(journey.mode==='checkpoint')renderCheckpoint();
- else if(journey.mode==='result')renderResult();
- else if(journey.mode==='end')root.innerHTML=`<article class="card"><h1 tabindex="-1">この会社での年末調整を確認しましょう</h1><p>この会社では行わないと回答しました。ほかの勤務先での手続きや、確定申告が必要かを会社・税務署に確認してください。</p><button class="button" data-action="edit-target">最初の回答を変える</button></article>`;
- else renderQuestion();
-}
-function move(){render();window.scrollTo?.(0,0);root.querySelector('h1')?.focus({preventScroll:true});}
-function answer(value){const item=currentItemV3(journey);if(!item)return;submitAnswerV3(journey,item.id,value);identity=syncIdentityV3(identity,journey.answers);if(identityDraft)identityDraft=syncIdentityV3(identityDraft,journey.answers);move();}
-function showError(message){const error=root.querySelector('#v3-error');error.hidden=false;error.textContent=message;root.querySelector('[name="answer"]')?.setAttribute('aria-invalid','true');}
-function printGuide(annexOnly=false){
- if(!identityIsApplied())return;
- const closedContracts=[...root.querySelectorAll('details.v3-contract:not([open])')];
- for(const detail of closedContracts)detail.open=true;
- if(annexOnly)root.classList.add('v2-annex-only');
- try{window.print();}finally{root.classList.remove('v2-annex-only');for(const detail of closedContracts)detail.open=false;}
-}
-async function printOfficial(){
- if(!identityIsApplied())return;
- const error=root.querySelector('#v3-paper-error'),button=root.querySelector('[data-action="print-official"]');
- const selected=new Set([...root.querySelectorAll('[data-paper-select]:checked')].map(el=>el.dataset.paperSelect));
- if(!selected.size){error.hidden=false;error.textContent='PDFにする用紙を一つ以上選んでください。';return;}
- error.hidden=true;button.disabled=true;button.textContent='用紙を準備しています…';
- try{
-  const docs=[...root.querySelectorAll('[data-official-document]')];
-  const sources=[...new Set(docs.filter(doc=>selected.has(doc.dataset.officialDocument)).flatMap(doc=>[...doc.querySelectorAll('svg image')].map(image=>image.getAttribute('href'))))];
-  await Promise.all(sources.map(src=>new Promise((resolve,reject)=>{const image=new Image();image.onload=resolve;image.onerror=()=>reject(new Error('image'));image.src=src;})));
-  if(document.fonts?.ready)await document.fonts.ready;
-  for(const doc of docs)doc.classList.toggle('is-print-selected',selected.has(doc.dataset.officialDocument));
-  document.body.classList.add('v3-print-official');
-  try{window.print();}finally{document.body.classList.remove('v3-print-official');for(const doc of docs)doc.classList.remove('is-print-selected');}
- }catch{error.hidden=false;error.textContent='用紙を読み込めませんでした。ZIPを展開してから開き、画像ファイルがあるか確認してください。';}
- finally{button.disabled=false;button.textContent='選んだ用紙の記入例をPDF保存・印刷';}
-}
-function refreshResult(){
- const top=window.scrollY,open=[...root.querySelectorAll('details[data-result-map][open]')].map(x=>x.dataset.resultMap);
- const selections=new Map([...root.querySelectorAll('[data-paper-select]')].map(el=>[el.dataset.paperSelect,el.checked]));
- renderResult();for(const el of root.querySelectorAll('details[data-result-map]'))if(open.includes(el.dataset.resultMap))el.open=true;
- for(const el of root.querySelectorAll('[data-paper-select]'))if(selections.has(el.dataset.paperSelect))el.checked=selections.get(el.dataset.paperSelect);
- window.scrollTo?.(0,top);
-}
-function identityIsApplied(){
- if(!identityDraft)return true;
- const error=root.querySelector('#v3-identity-error');
- if(error){error.hidden=false;error.textContent='名前や住所の入力を変更しています。先に「名前・住所などを用紙へ反映する」を押してください。';root.querySelector('[data-identity-form] button[type="submit"]')?.focus();}
- return false;
-}
-root.addEventListener('input',event=>{
- const form=event.target.closest('form[data-identity-form]');
- if(form)identityDraft=captureIdentityFormV3(form,journey.answers);
+function render(){if(!started)renderHome();else renderPage();}
+function refreshResult(){const top=window.scrollY;renderResult();if(Number.isFinite(top))window.scrollTo?.(0,top);}
+function answer(id,value){commitWizardAnswer(answers,id,value);editingId=null;openMapId=null;expandedImages={};hiddenValues={};delete multiDraft[id];render();}
+root.addEventListener('click',event=>{
+ const b=event.target.closest('button');if(!b)return;
+ if(b.dataset.action==='start'){started=true;render();return;}
+ if(b.dataset.action==='restart'){if(window.confirm('入力内容をすべて消して、最初からやり直しますか？')){answers={};currentPage=0;editingId=null;multiDraft={};checked={};openMapId=null;expandedImages={};hiddenValues={};started=false;render();}return;}
+ if(b.dataset.action==='previous'){currentPage=Math.max(0,currentPage-1);editingId=null;render();return;}
+ if(b.dataset.action==='next'){currentPage=Math.min(WIZARD_PAGES.length,currentPage+1);editingId=null;render();return;}
+ if(b.dataset.action==='print'){window.print();return;}
+ if(b.dataset.action==='toggle-annex'){annexExpanded=!annexExpanded;refreshResult();return;}
+ if(b.dataset.action==='print-annex'){
+  if(!buildFormGuide(buildResult(answers)).forms.some(f=>f.supplement?.required))return;
+  root.classList.add('v2-annex-only');
+  try{window.print();}finally{root.classList.remove('v2-annex-only');}
+  return;
+ }
+ if(b.dataset.page!==undefined){const page=Number(b.dataset.page),p=pageProgress(traceWizard(answers));if(p[page]?.status!=='locked'){currentPage=page;editingId=null;render();}return;}
+ if(b.dataset.edit!==undefined){editingId=b.dataset.edit;render();return;}
+ if(b.dataset.map!==undefined){openMapId=openMapId===b.dataset.map?null:b.dataset.map;refreshResult();return;}
+ if(b.dataset.toggleValues!==undefined){const key=b.dataset.toggleValues;hiddenValues[key]=!hiddenValues[key];refreshResult();return;}
+ if(b.dataset.expandImage!==undefined){const key=b.dataset.expandImage;expandedImages[key]=!expandedImages[key];refreshResult();return;}
+ if(b.dataset.choiceRoute!==undefined){answer(b.dataset.choiceRoute,b.dataset.choiceValue);return;}
+ if(b.dataset.unknown!==undefined){answer(b.dataset.unknown,'分からない');return;}
+ if(b.dataset.reuseHolder!==undefined){answer(b.dataset.reuseHolder,SAME_CONTRACT_HOLDER);return;}
+ if(b.dataset.multiRoute!==undefined){const id=b.dataset.multiRoute,value=b.dataset.multiValue,selected=multiDraft[id]||(Array.isArray(answers[id])?[...answers[id]]:[]);if(value==='どれもない')multiDraft[id]=selected.includes(value)?[]:[value];else multiDraft[id]=selected.includes(value)?selected.filter(x=>x!==value):[...selected.filter(x=>x!=='どれもない'),value];render();return;}
+ if(b.dataset.confirmMulti!==undefined){const id=b.dataset.confirmMulti,list=multiDraft[id]||answers[id]||[];if(!list.length){const error=b.parentElement.querySelector('.v2-error');if(error){error.hidden=false;error.textContent='該当する項目を選んでください。';}return;}answer(id,list);}
 });
 root.addEventListener('submit',event=>{
- const identityForm=event.target.closest('form[data-identity-form]');
- if(identityForm){
-  event.preventDefault();const result=validateIdentityV3(captureIdentityFormV3(identityForm,journey.answers),journey.answers);
-  if(!result.ok){const error=root.querySelector('#v3-identity-error');error.hidden=false;error.textContent=result.errors.map(e=>e.message).join(' ');const input=[...identityForm.querySelectorAll('[data-identity-path]')].find(el=>el.dataset.identityPath===result.errors[0].path);input?.setAttribute('aria-invalid','true');input?.focus();return;}
-  identity=result.identity;identityDraft=null;refreshResult();
-  root.querySelector('.v3-official-output')?.scrollIntoView({behavior:'smooth',block:'start'});return;
- }
-
- const form=event.target.closest('form[data-question]');if(!form)return;event.preventDefault();
- const item=currentItemV3(journey);if(!item||form.dataset.question!==item.id)return;const q=item.question;
- if(q.input==='text'){const value=form.querySelector('input').value.trim();if(!value||value.length>80){showError('証明書の内容を1〜80文字で入力してください。分からなければ、あとで確認できます。');return;}answer(value);return;}
- if(q.input){const parsed=parseNumberV3(form.querySelector('input').value,q);if(!parsed.ok){showError(parsed.message);return;}answer(parsed.value);return;}
- const selected=[...form.querySelectorAll('input[name="answer"]:checked')].map(x=>x.value);
- if(!selected.length){showError(q.multi?'当てはまるものを選んでください。一つもなければ「どれもない」を選びます。':'答えを一つ選んでください。');return;}
- answer(q.multi?selected:selected[0]);
+ const textForm=event.target.closest('form[data-text-route]');
+ if(textForm?.dataset.textRoute!==undefined){event.preventDefault();const value=textForm.querySelector('input').value.trim();if(!value||value.length>80){const error=textForm.querySelector('.v2-error');error.hidden=false;error.textContent='1～80文字で入力してください。';return;}answer(textForm.dataset.textRoute,value);return;}
+ const form=event.target.closest('form[data-number-route]');if(!form)return;event.preventDefault();const input=form.querySelector('input'),value=Number(input.value),min=Number(input.min),max=Number(input.max);
+ if(input.value===''||!Number.isInteger(value)||value<min||value>max){const error=form.querySelector('.v2-error');error.hidden=false;error.textContent=`${min}～${max}の整数を入力してください。`;return;}
+ answer(form.dataset.numberRoute,value);
 });
-root.addEventListener('change',event=>{
- const input=event.target;if(input.matches('[data-identity-path]')){identityDraft=captureIdentityFormV3(input.closest('form'),journey.answers);input.removeAttribute('aria-invalid');return;}if(input.matches('[data-check]')){checked[input.dataset.check]=input.checked;return;}
- if(input.matches('input[type="checkbox"][name="answer"]')&&input.checked){const siblings=root.querySelectorAll('input[type="checkbox"][name="answer"]');if(input.value==='どれもない')for(const el of siblings){if(el!==input)el.checked=false;}else for(const el of siblings){if(el.value==='どれもない')el.checked=false;}}
- if(input.matches('[name="answer"]')){input.removeAttribute('aria-invalid');const error=root.querySelector('#v3-error');if(error)error.hidden=true;}
-});
-root.addEventListener('click',event=>{
- const button=event.target.closest('button');if(!button)return;const action=button.dataset.action;
- if(action==='start'){startJourneyV3(journey);move();}
- else if(action==='continue'){continueJourneyV3(journey);move();}
- else if(action==='back'){backJourneyV3(journey);move();}
- else if(action==='unknown'){answer('分からない');}
- else if(action==='reuse'){answer(SAME_CONTRACT_HOLDER);}
- else if(action==='cancel-edit'){journey.mode='result';journey.returnToResult=false;move();}
- else if(action==='edit-target'){editAnswerV3(journey,'target');move();}
- else if(action==='restart'){if(window.confirm('回答を消して、最初からやり直しますか？')){journey=createJourneyV3();checked={};annexExpanded=false;expandedImages={};hiddenValues={};identity=createIdentityV3();identityDraft=null;move();}}
- else if(action==='print')printGuide();
- else if(action==='print-official')printOfficial();
- else if(action==='clear-identity'){if(window.confirm('入力した本人・家族・勤務先の名前や住所を消しますか？税金の質問への回答は残ります。')){identity=createIdentityV3();identityDraft=null;refreshResult();}}
- else if(action==='toggle-annex'){annexExpanded=!annexExpanded;refreshResult();}
- else if(action==='print-annex'){if(currentGuide().forms.some(f=>f.supplement?.required))printGuide(true);}
- else if(button.dataset.edit){editAnswerV3(journey,button.dataset.edit);move();}
- else if(button.dataset.toggleValues){hiddenValues[button.dataset.toggleValues]=!hiddenValues[button.dataset.toggleValues];refreshResult();}
- else if(button.dataset.expandImage){expandedImages[button.dataset.expandImage]=!expandedImages[button.dataset.expandImage];refreshResult();}
-});
+root.addEventListener('change',event=>{if(event.target.matches('[data-check]'))checked[event.target.dataset.check]=event.target.checked;});
 render();
 
   Object.assign(app, {  });
