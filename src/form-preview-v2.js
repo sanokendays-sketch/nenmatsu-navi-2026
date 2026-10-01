@@ -12,7 +12,7 @@ export const FORM_PREVIEW_ASSETS = Object.freeze({
   housing: { title:'住宅借入金等特別控除申告書の国税庁記載例', image:'forms/housing-example-front.png', pdf:'forms/housing-example-2026.pdf', width:1871, height:1323, kind:'example' }
 });
 
-const REGIONS = Object.freeze({
+export const REGIONS = Object.freeze({
   fuyouHead: { asset:'fuyou', title:'本人欄', crop:[75,45,1950,290], mark:[917,87,1020,230] },
   fuyouSpouse: { asset:'fuyou', title:'A 源泉控除対象配偶者', crop:[76,344,2020,225], mark:[128,453,1957,100] },
   fuyouDependent: { asset:'fuyou', title:'B 源泉控除対象親族', crop:[74,348,2020,663], mark:[128,552,1957,443] },
