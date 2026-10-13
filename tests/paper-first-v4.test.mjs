@@ -73,4 +73,3 @@ test('unknown salary produces no numeric calculated overlay and no duplicate doc
  const page=buildOfficialOutputV3(g).pages.find(p=>p.id==='combinedForm');
  assert.equal(page.entries.some(e=>e.key==='basic-deduction'),false);assert.equal(new Set(g.requiredDocuments).size,g.requiredDocuments.length);
 });
-
