@@ -15,7 +15,7 @@ body{min-width:320px}button,input,summary{font:inherit}a{color:#225b46;text-unde
 @media print{@page{size:A4;margin:14mm}:root{font-size:10pt;background:white;color:#111}.v3-shell{width:100%;padding:0}.site-header,footer,.v3-skip,.v3-print-actions,button,.v3-result-images,.v3-history,.v3-glossary{display:none!important}.card{margin:0;padding:0;border:0;border-radius:0;box-shadow:none}.v3-result-card{border:1px solid #aaa;padding:12px;margin:12px 0}.v3-transfer-field{margin:6px 0;padding:8px;break-inside:avoid;background:white}.v3-field-purpose,.v3-transfer-field small{color:#333}.v3-result-card h3,.v3-result-section h4{break-after:avoid}.v3-contract{display:block}.v3-contract>:not(summary){display:block!important}.v3-contract summary{display:block;list-style:none}.v3-check input{width:12px;height:12px}.v3-form-link{background:white;padding:8px}.v3-form-link span:last-child{display:none}.v3-confirm-note,.v3-money-note{background:white;border-color:#888;padding:8px}.v3-confirm-list{background:white;color:#111}.v3-checkpoint,.v3-home,.v3-progress,.v3-question-layout{display:none!important}}
 @media print{
  /* Atomic field boxes prevent Chromium from splitting a value at a page boundary. */
- .v3-transfer-field{display:inline-block;width:100%;vertical-align:top;break-inside:avoid-page;page-break-inside:avoid}
+ .v3-transfer-field,.v3-result-card>h3{display:inline-block;width:100%;vertical-align:top;break-inside:avoid-page;page-break-inside:avoid}
  .v3-results h2,.v3-result-card>.eyebrow{break-after:avoid-page}
  .v3-official-output,.v3-identity-editor{display:none!important}
  @page v3-official-paper{size:A4 landscape;margin:6mm}
