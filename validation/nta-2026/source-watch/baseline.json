@@ -1,0 +1,94 @@
+{
+  "checkedAt": "2026-10-13T16:03:24.366Z",
+  "baselinePurpose": "Observed hashes; content review is a separate record.",
+  "documents": [
+    {
+      "id": "fuyou-blank",
+      "url": "https://www.nta.go.jp/taxes/tetsuzuki/shinsei/annai/gensen/pdf/2026bun_01.pdf",
+      "bytes": 1177114,
+      "sha256": "15bae0d3fbca3dde48ebd2db2851af37eefee0f1e2ae682b9313e9d2e3fb427c",
+      "baselineSha256": null,
+      "lastModified": "Wed, 03 Sep 2025 08:30:03 GMT",
+      "changed": false,
+      "newSincePreviousCheck": false,
+      "savedPath": null
+    },
+    {
+      "id": "combined-blank",
+      "url": "https://www.nta.go.jp/taxes/tetsuzuki/shinsei/annai/gensen/pdf/2026bun_06.pdf",
+      "bytes": 619395,
+      "sha256": "c3806d528ec07799215187ab1e78cbfe10cf597884d6573b5c01b906d26461da",
+      "baselineSha256": null,
+      "lastModified": "Mon, 31 Aug 2026 08:30:05 GMT",
+      "changed": false,
+      "newSincePreviousCheck": false,
+      "savedPath": null
+    },
+    {
+      "id": "insurance-blank",
+      "url": "https://www.nta.go.jp/taxes/tetsuzuki/shinsei/annai/gensen/pdf/2026bun_04.pdf",
+      "bytes": 842522,
+      "sha256": "7bc20e3ff5603fdec5c9d24ad322f08741c40284fdb8dec43687ba327cb58b7c",
+      "baselineSha256": null,
+      "lastModified": "Mon, 31 Aug 2026 08:30:05 GMT",
+      "changed": false,
+      "newSincePreviousCheck": false,
+      "savedPath": null
+    },
+    {
+      "id": "example-305",
+      "url": "https://www.nta.go.jp/publication/pamph/gensen/nencho2026/pdf/305.pdf",
+      "bytes": 1360018,
+      "sha256": "f49605a28ed8222392fe633006cab81d1cfa2539763b28b3806b098718776030",
+      "baselineSha256": null,
+      "lastModified": "Mon, 31 Aug 2026 08:30:09 GMT",
+      "changed": false,
+      "newSincePreviousCheck": false,
+      "savedPath": null
+    },
+    {
+      "id": "example-306",
+      "url": "https://www.nta.go.jp/publication/pamph/gensen/nencho2026/pdf/306.pdf",
+      "bytes": 3171182,
+      "sha256": "8d3e7b6a7f4bb0c5fec36f2706973854bb434e11a6e484787f8e50f107819bd6",
+      "baselineSha256": null,
+      "lastModified": "Mon, 05 Oct 2026 01:00:03 GMT",
+      "changed": false,
+      "newSincePreviousCheck": false,
+      "savedPath": null
+    },
+    {
+      "id": "example-307",
+      "url": "https://www.nta.go.jp/publication/pamph/gensen/nencho2026/pdf/307.pdf",
+      "bytes": 1446118,
+      "sha256": "bac18eac5a24be99322adb5fd5f50f706d1d2940fa690b16ba4bff2f52f441ca",
+      "baselineSha256": null,
+      "lastModified": "Mon, 31 Aug 2026 08:30:09 GMT",
+      "changed": false,
+      "newSincePreviousCheck": false,
+      "savedPath": null
+    },
+    {
+      "id": "example-308",
+      "url": "https://www.nta.go.jp/publication/pamph/gensen/nencho2026/pdf/308.pdf",
+      "bytes": 5655669,
+      "sha256": "938d4832bf4010602c9163f2e709beefde1b05d69225531f65fed3260b105026",
+      "baselineSha256": null,
+      "lastModified": "Mon, 31 Aug 2026 08:30:09 GMT",
+      "changed": false,
+      "newSincePreviousCheck": false,
+      "savedPath": null
+    },
+    {
+      "id": "year-end-guide",
+      "url": "https://www.nta.go.jp/publication/pamph/gensen/nencho2026/pdf/nencho_all.pdf",
+      "bytes": 11717431,
+      "sha256": "337bd78fdc3f6dc74e9fe7b3a5998e95fc690b144742d0f0b32044dbbca65498",
+      "baselineSha256": null,
+      "lastModified": "Thu, 24 Sep 2026 08:30:11 GMT",
+      "changed": false,
+      "newSincePreviousCheck": false,
+      "savedPath": null
+    }
+  ]
+}

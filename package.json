@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build-site.mjs",
-    "test": "node --test tests/paper-first-v4.test.mjs"
+    "test": "node --test tests/paper-first-v4.test.mjs tests/nta-306-revision.test.mjs"
   },
   "engines": {
     "node": ">=20"
