@@ -1589,7 +1589,7 @@ function questionTitle(id,q){
  return q.text;
 }
 function renderHome(){
- root.innerHTML=`<article class="card v2-home"><div class="eyebrow">令和8年分 · バージョン2</div><h1>書類を見ながら、ページごとに入力</h1><p>国税庁の年末調整計算シートと申告書の入力項目に沿って、必要な質問だけを表示します。質問と同時に、対応する令和8年分申告書の実際の欄を示します。黄色は記入候補、青色は判定に関連する欄です。</p><ol class="v2-home-steps">${WIZARD_PAGES.map(p=>`<li>${esc(p.title)}</li>`).join('')}</ol><div class="notice">判定のための質問は回答をそのまま申告書へ書きません。保険契約の契約者・受取人等の氏名は、記入例を作るために入力できます。住所・マイナンバーは集めません。回答は保存・送信されず、計算シートへの自動転記も行いません。</div><button class="button v2-primary" data-action="start">入力をはじめる</button></article>`;
+ root.innerHTML=`<article class="card v2-home"><div class="eyebrow">令和8年分 · 紙を見ながら入力</div><h1>書類を見ながら、ページごとに入力</h1><p>国税庁の年末調整計算シートと申告書の入力項目に沿って、必要な質問だけを表示します。質問と同時に、対応する令和8年分申告書の実際の欄を示します。黄色は記入候補、青色は判定に関連する欄です。</p><ol class="v2-home-steps">${WIZARD_PAGES.map(p=>`<li>${esc(p.title)}</li>`).join('')}</ol><div class="notice">判定のための質問は回答をそのまま申告書へ書きません。保険契約の契約者・受取人等の氏名は、記入例を作るために入力できます。住所・マイナンバーは集めません。回答は保存・送信されず、計算シートへの自動転記も行いません。</div><button class="button v2-primary" data-action="start">入力をはじめる</button></article>`;
 }
 function questionControls(item){
  const {id,question:q}=item;
