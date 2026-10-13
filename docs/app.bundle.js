@@ -2032,7 +2032,13 @@ function paperZonesV4(tabId){
  const owner=tab.asset==='combined'?{id:'combinedHead',group:'identity',title:'本人と勤務先の欄',mark:[487,86,1320,185],asset:FORM_PREVIEW_ASSETS.combined}:
   tab.asset==='insurance'?{id:'insuranceHead',group:'identity',title:'本人と勤務先の欄',mark:[400,87,1520,216],asset:FORM_PREVIEW_ASSETS.insurance}:null;
  return [...(owner?[owner]:[]),...Object.entries(REGION_GROUP_V4).filter(([id])=>REGIONS[id].asset===tab.asset)
-  .map(([id,group])=>({id,group,title:REGIONS[id].title,mark:REGIONS[id].mark,asset:FORM_PREVIEW_ASSETS[tab.asset]}))];
+  .map(([id,group])=>{
+   const mark=[...REGIONS[id].mark];
+   // These two controls share a column. Stop the parent control at the student
+   // row boundary so its centre cannot be covered by the student button.
+   if(id==='fuyouParent')mark[3]=REGIONS.fuyouStudent.mark[1]-mark[1];
+   return {id,group,title:REGIONS[id].title,mark,asset:FORM_PREVIEW_ASSETS[tab.asset]};
+  })];
 }
 
 function groupSequenceV4(groupId,answers={}){
@@ -2154,6 +2160,10 @@ function serializeDraftV4(answers,identity,tabId){
  return JSON.stringify({format:FORMAT,version:1,year:YEAR,savedAt:new Date().toISOString(),answers,identity,tabId},null,2);
 }
 
+function draftHasDataV4(answers={},identity={},identityDraft=null){
+ return Boolean(identityDraft)||Object.keys(answers).length>0||Object.values(identity).some(record=>Array.isArray(record)?record.some(person=>Object.values(person||{}).some(Boolean)):Object.values(record||{}).some(Boolean));
+}
+
 function readDraftV4(text){
  if(typeof text!=='string'||text.length>1000000)throw new Error('作業ファイルが大きすぎます。');
  let raw;
@@ -2165,6 +2175,11 @@ function readDraftV4(text){
  if(entries.length>5000)throw new Error('回答数が多すぎます。');
  const answers={};
  for(const [id,value] of entries){
+  // commitWizardAnswer also stores this derived alias. It is not a question ID.
+  if(id==='depCount'){
+   if(!Number.isInteger(value)||value<1||value>10||value!==raw.answers.dependentCount||raw.answers.dependents!=='はい')throw new Error('扶養家族の人数データが一致していません。');
+   answers[id]=value;continue;
+  }
   if(!ROUTE.test(id)||!QUESTIONS[baseQuestionId(id)])throw new Error('作業ファイルに不明な質問があります。');
   const q=QUESTIONS[baseQuestionId(id)];
   if(q.input){
@@ -2177,6 +2192,14 @@ function readDraftV4(text){
   }else if(!q.choices.includes(value))throw new Error('作業ファイルに不明な選択肢があります。');
   answers[id]=value;
  }
+ for(const [countKey,flag] of [['dependentCount','dependents'],['lifeCount','life'],['earthquakeCount','earthquake']]){
+  if(Object.hasOwn(answers,countKey)&&answers[flag]!=='はい')throw new Error('件数・人数と回答内容が一致していません。');
+ }
+ if(Object.hasOwn(answers,'dependentCount'))answers.depCount=answers.dependentCount;
+ for(const id of Object.keys(answers)){
+  const person=id.match(/^(?:dep:|disability:dep:)(\d+):/),contract=id.match(/^(life|earthquake):(\d+):/);
+  if(person&&Number(person[1])>Number(answers.depCount||0)||contract&&Number(contract[2])>Number(answers[contract[1]+'Count']||0))throw new Error('入力した人数・件数を超えるデータがあります。');
+ }
  try{for(const id of Object.keys(PAPER_GROUPS_V4))groupSequenceV4(id,answers);}catch{throw new Error('質問のつながりを確認できませんでした。');}
  const checked=validateIdentityV3(raw.identity,answers);
  if(!checked.ok)throw new Error(`氏名・住所の内容を確認できませんでした。${checked.errors[0].message}`);
@@ -2184,12 +2207,12 @@ function readDraftV4(text){
  return {answers,identity:checked.identity,tabId,savedAt:raw.savedAt};
 }
 
-  Object.assign(app, { serializeDraftV4, readDraftV4 });
+  Object.assign(app, { serializeDraftV4, draftHasDataV4, readDraftV4 });
 }(window.YearEndApp));
 
 /* app-v4.js */
 (function (app) {
-  const { buildResult, buildFormGuide, QUESTIONS, baseQuestionId, commitWizardAnswer, contractAnswer, SAME_CONTRACT_HOLDER, questionCopyV3, choiceLabelV3, parseNumberV3, FORM_PREVIEW_ASSETS, createIdentityV3, syncIdentityV3, captureIdentityFormV3, validateIdentityV3, attachIdentityToGuideV3, renderIdentityEditorV3, buildOfficialOutputV3, renderOfficialPageSvgV3, renderInsuranceSupplement, PAPER_GROUPS_V4, PAPER_TABS_V4, paperZonesV4, groupSequenceV4, groupPendingV4, groupStatusV4, visiblePaperEntryV4, paperPreflightDetailsV4, serializeDraftV4, readDraftV4 } = app;
+  const { buildResult, buildFormGuide, QUESTIONS, baseQuestionId, commitWizardAnswer, contractAnswer, SAME_CONTRACT_HOLDER, questionCopyV3, choiceLabelV3, parseNumberV3, FORM_PREVIEW_ASSETS, createIdentityV3, syncIdentityV3, captureIdentityFormV3, validateIdentityV3, attachIdentityToGuideV3, renderIdentityEditorV3, buildOfficialOutputV3, renderOfficialPageSvgV3, renderInsuranceSupplement, PAPER_GROUPS_V4, PAPER_TABS_V4, paperZonesV4, groupSequenceV4, groupPendingV4, groupStatusV4, visiblePaperEntryV4, paperPreflightDetailsV4, serializeDraftV4, readDraftV4, draftHasDataV4 } = app;
 
 
 
@@ -2297,28 +2320,29 @@ function answer(value){
  if(identityDraft)identityDraft=syncIdentityV3(identityDraft,answers);
  activeQuestion=null;preflightOpen=false;printAcknowledged=false;saveMessage='変更があります。続きから使う場合は作業ファイルをもう一度保存してください。';render();
 }
+function showSaveMessage(message){saveMessage=message;const node=root.querySelector('.v4-save-message');if(node)node.textContent=message;}
 function saveDraft(){
  if(identityDraft){
   const checked=validateIdentityV3(identityDraft,answers);
-  if(!checked.ok){saveMessage=`氏名・住所を保存できません：${checked.errors[0].message}`;render();return;}
+  if(!checked.ok){showSaveMessage(`氏名・住所を保存できません：${checked.errors[0].message}`);return;}
   identity=checked.identity;identityDraft=null;
  }
  const file=new Blob([serializeDraftV4(answers,identity,tabId)],{type:'application/json;charset=utf-8'});
  const url=URL.createObjectURL(file),link=document.createElement('a');
  link.href=url;link.download='nenmatsu-navi-2026-sagyou.json';document.body.append(link);link.click();link.remove();
  setTimeout(()=>URL.revokeObjectURL(url),60000);
- saveMessage='作業ファイルの保存を開始しました。「反映して次へ」を押した回答が保存対象です。保存先を確認してください。';render();
+ showSaveMessage('作業ファイルの保存を開始しました。「反映して次へ」を押した回答が保存対象です。保存先を確認してください。');
 }
 async function loadDraft(file){
  if(!file)return;
  try{
   if(file.size>1000000)throw new Error('作業ファイルが大きすぎます。');
   const loaded=readDraftV4(await file.text());
-  if((Object.keys(answers).length||Object.values(identity.taxpayer).some(Boolean)||identityDraft)&&!window.confirm('現在の入力を作業ファイルの内容に置き換えますか？'))return;
+  if(draftHasDataV4(answers,identity,identityDraft)&&!window.confirm('現在の入力を作業ファイルの内容に置き換えますか？'))return;
   answers=loaded.answers;identity=loaded.identity;identityDraft=null;tabId=loaded.tabId;
   zoneId=null;activeGroup=null;activeQuestion=null;preflightOpen=false;printAcknowledged=false;
   saveMessage='作業ファイルを読み込みました。用紙上の内容を確認してから続きを入力してください。';render();
- }catch(error){saveMessage=`読み込めませんでした：${error.message}`;render();}
+ }catch(error){showSaveMessage(`読み込めませんでした：${error.message}`);}
 }
 async function printPaper(){
  if(!printAcknowledged)return;

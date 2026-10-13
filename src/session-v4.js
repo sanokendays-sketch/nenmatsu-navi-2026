@@ -11,6 +11,10 @@ export function serializeDraftV4(answers,identity,tabId){
  return JSON.stringify({format:FORMAT,version:1,year:YEAR,savedAt:new Date().toISOString(),answers,identity,tabId},null,2);
 }
 
+export function draftHasDataV4(answers={},identity={},identityDraft=null){
+ return Boolean(identityDraft)||Object.keys(answers).length>0||Object.values(identity).some(record=>Array.isArray(record)?record.some(person=>Object.values(person||{}).some(Boolean)):Object.values(record||{}).some(Boolean));
+}
+
 export function readDraftV4(text){
  if(typeof text!=='string'||text.length>1000000)throw new Error('作業ファイルが大きすぎます。');
  let raw;
@@ -22,6 +26,11 @@ export function readDraftV4(text){
  if(entries.length>5000)throw new Error('回答数が多すぎます。');
  const answers={};
  for(const [id,value] of entries){
+  // commitWizardAnswer also stores this derived alias. It is not a question ID.
+  if(id==='depCount'){
+   if(!Number.isInteger(value)||value<1||value>10||value!==raw.answers.dependentCount||raw.answers.dependents!=='はい')throw new Error('扶養家族の人数データが一致していません。');
+   answers[id]=value;continue;
+  }
   if(!ROUTE.test(id)||!QUESTIONS[baseQuestionId(id)])throw new Error('作業ファイルに不明な質問があります。');
   const q=QUESTIONS[baseQuestionId(id)];
   if(q.input){
@@ -33,6 +42,14 @@ export function readDraftV4(text){
    if(!Array.isArray(value)||!value.length||value.some(item=>!q.choices.includes(item)))throw new Error('作業ファイルに不明な選択肢があります。');
   }else if(!q.choices.includes(value))throw new Error('作業ファイルに不明な選択肢があります。');
   answers[id]=value;
+ }
+ for(const [countKey,flag] of [['dependentCount','dependents'],['lifeCount','life'],['earthquakeCount','earthquake']]){
+  if(Object.hasOwn(answers,countKey)&&answers[flag]!=='はい')throw new Error('件数・人数と回答内容が一致していません。');
+ }
+ if(Object.hasOwn(answers,'dependentCount'))answers.depCount=answers.dependentCount;
+ for(const id of Object.keys(answers)){
+  const person=id.match(/^(?:dep:|disability:dep:)(\d+):/),contract=id.match(/^(life|earthquake):(\d+):/);
+  if(person&&Number(person[1])>Number(answers.depCount||0)||contract&&Number(contract[2])>Number(answers[contract[1]+'Count']||0))throw new Error('入力した人数・件数を超えるデータがあります。');
  }
  try{for(const id of Object.keys(PAPER_GROUPS_V4))groupSequenceV4(id,answers);}catch{throw new Error('質問のつながりを確認できませんでした。');}
  const checked=validateIdentityV3(raw.identity,answers);

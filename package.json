@@ -4,7 +4,8 @@
   "version": "0.4.0",
   "type": "module",
   "scripts": {
-    "build": "node scripts/build-site.mjs"
+    "build": "node scripts/build-site.mjs",
+    "test": "node --test tests/paper-first-v4.test.mjs"
   },
   "engines": {
     "node": ">=20"

@@ -10,7 +10,7 @@ import { createIdentityV3, syncIdentityV3, captureIdentityFormV3, validateIdenti
 import { buildOfficialOutputV3, renderOfficialPageSvgV3 } from './official-output-v3.js';
 import { renderInsuranceSupplement } from './insurance-supplement-v2.js';
 import { PAPER_GROUPS_V4, PAPER_TABS_V4, paperZonesV4, groupSequenceV4, groupPendingV4, groupStatusV4, visiblePaperEntryV4, paperPreflightDetailsV4 } from './paper-first-v4.js';
-import { serializeDraftV4, readDraftV4 } from './session-v4.js';
+import { serializeDraftV4, readDraftV4, draftHasDataV4 } from './session-v4.js';
 
 const root=document.querySelector('#app');
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -106,28 +106,29 @@ function answer(value){
  if(identityDraft)identityDraft=syncIdentityV3(identityDraft,answers);
  activeQuestion=null;preflightOpen=false;printAcknowledged=false;saveMessage='変更があります。続きから使う場合は作業ファイルをもう一度保存してください。';render();
 }
+function showSaveMessage(message){saveMessage=message;const node=root.querySelector('.v4-save-message');if(node)node.textContent=message;}
 function saveDraft(){
  if(identityDraft){
   const checked=validateIdentityV3(identityDraft,answers);
-  if(!checked.ok){saveMessage=`氏名・住所を保存できません：${checked.errors[0].message}`;render();return;}
+  if(!checked.ok){showSaveMessage(`氏名・住所を保存できません：${checked.errors[0].message}`);return;}
   identity=checked.identity;identityDraft=null;
  }
  const file=new Blob([serializeDraftV4(answers,identity,tabId)],{type:'application/json;charset=utf-8'});
  const url=URL.createObjectURL(file),link=document.createElement('a');
  link.href=url;link.download='nenmatsu-navi-2026-sagyou.json';document.body.append(link);link.click();link.remove();
  setTimeout(()=>URL.revokeObjectURL(url),60000);
- saveMessage='作業ファイルの保存を開始しました。「反映して次へ」を押した回答が保存対象です。保存先を確認してください。';render();
+ showSaveMessage('作業ファイルの保存を開始しました。「反映して次へ」を押した回答が保存対象です。保存先を確認してください。');
 }
 async function loadDraft(file){
  if(!file)return;
  try{
   if(file.size>1000000)throw new Error('作業ファイルが大きすぎます。');
   const loaded=readDraftV4(await file.text());
-  if((Object.keys(answers).length||Object.values(identity.taxpayer).some(Boolean)||identityDraft)&&!window.confirm('現在の入力を作業ファイルの内容に置き換えますか？'))return;
+  if(draftHasDataV4(answers,identity,identityDraft)&&!window.confirm('現在の入力を作業ファイルの内容に置き換えますか？'))return;
   answers=loaded.answers;identity=loaded.identity;identityDraft=null;tabId=loaded.tabId;
   zoneId=null;activeGroup=null;activeQuestion=null;preflightOpen=false;printAcknowledged=false;
   saveMessage='作業ファイルを読み込みました。用紙上の内容を確認してから続きを入力してください。';render();
- }catch(error){saveMessage=`読み込めませんでした：${error.message}`;render();}
+ }catch(error){showSaveMessage(`読み込めませんでした：${error.message}`);}
 }
 async function printPaper(){
  if(!printAcknowledged)return;

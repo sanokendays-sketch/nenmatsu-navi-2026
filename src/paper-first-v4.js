@@ -39,7 +39,13 @@ export function paperZonesV4(tabId){
  const owner=tab.asset==='combined'?{id:'combinedHead',group:'identity',title:'本人と勤務先の欄',mark:[487,86,1320,185],asset:FORM_PREVIEW_ASSETS.combined}:
   tab.asset==='insurance'?{id:'insuranceHead',group:'identity',title:'本人と勤務先の欄',mark:[400,87,1520,216],asset:FORM_PREVIEW_ASSETS.insurance}:null;
  return [...(owner?[owner]:[]),...Object.entries(REGION_GROUP_V4).filter(([id])=>REGIONS[id].asset===tab.asset)
-  .map(([id,group])=>({id,group,title:REGIONS[id].title,mark:REGIONS[id].mark,asset:FORM_PREVIEW_ASSETS[tab.asset]}))];
+  .map(([id,group])=>{
+   const mark=[...REGIONS[id].mark];
+   // These two controls share a column. Stop the parent control at the student
+   // row boundary so its centre cannot be covered by the student button.
+   if(id==='fuyouParent')mark[3]=REGIONS.fuyouStudent.mark[1]-mark[1];
+   return {id,group,title:REGIONS[id].title,mark,asset:FORM_PREVIEW_ASSETS[tab.asset]};
+  })];
 }
 
 export function groupSequenceV4(groupId,answers={}){
