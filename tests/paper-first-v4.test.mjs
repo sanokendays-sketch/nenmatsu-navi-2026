@@ -7,7 +7,14 @@ import { commitWizardAnswer } from '../src/wizard-v2.js';
 import { createIdentityV3, syncIdentityV3, attachIdentityToGuideV3 } from '../src/identity-v3.js';
 import { buildOfficialOutputV3 } from '../src/official-output-v3.js';
 import { serializeDraftV4, readDraftV4, draftHasDataV4 } from '../src/session-v4.js';
-import { PAPER_GROUPS_V4, PAPER_TABS_V4, paperZonesV4, groupStatusV4, groupSequenceV4, visiblePaperEntryV4, paperPreflightDetailsV4 } from '../src/paper-first-v4.js';
+import { PAPER_GROUPS_V4, PAPER_TABS_V4, paperZonesV4, orderedPaperGroupsV4, groupStatusV4, groupSequenceV4, visiblePaperEntryV4, paperPreflightDetailsV4 } from '../src/paper-first-v4.js';
+
+test('guided paper sections follow reading order without repeating shared questions',()=>{
+ assert.deepEqual(orderedPaperGroupsV4('dependentForm'),['identity','spouse','dependents','disability','family','student']);
+ assert.deepEqual(orderedPaperGroupsV4('combinedForm'),['identity','salary','spouse','dependents']);
+ assert.deepEqual(orderedPaperGroupsV4('insuranceForm'),['identity','life','earthquake','social','ideco']);
+ assert.deepEqual(orderedPaperGroupsV4('missing'),[]);
+});
 
 const baseline={target:'はい',form:'はい',salaryLimit:QUESTIONS.salaryLimit.choices[0],changedJob:'いいえ',otherSalary:'いいえ',ownSalary:4800000,otherIncome:'ない',spouse:'いいえ',dependents:'いいえ',disabilitySelf:'ない',disabilityFamily:'いいえ',parentStatus:'婚姻中',student:'いいえ',life:'いいえ',earthquake:'いいえ',social:'いいえ',ideco:'いいえ',housing:'いいえ',special:['どれもない']};
 const snapshot=(answers,identity=syncIdentityV3(createIdentityV3(),answers))=>serializeDraftV4(answers,identity,'insuranceForm');

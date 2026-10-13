@@ -769,10 +769,10 @@ function buildResult(a) {
   const adjustedSalaryIncome=salaryIncome===null||incomeAdjustmentDeduction===null?null:Math.max(0,salaryIncome-incomeAdjustmentDeduction);
   let totalIncome = a.otherIncome === 'ない' && hasGrossSalary ? adjustedSalaryIncome : null;
   const basicDeduction = totalIncome === null ? null : calculateBasicDeduction(totalIncome);
-  const spouseGrossIncome=incomeFromAnswer(a.spouseIncomeType,a.spouseSalary);
+  const spouseTotalIncome=incomeFromAnswer(a.spouseIncomeType,a.spouseSalary);
   let spouseDeduction={type:'none',amount:0,status:'unknown'};
-  if(a.spouse==='はい'&&spouseGrossIncome!==null&&a.spouseShared==='はい'&&a.spouseClaimed==='いいえ') {
-    spouseDeduction=calculateSpouseDeduction(totalIncome,spouseGrossIncome,{spouseAge:Number.isFinite(Number(a.spouseAge))?Number(a.spouseAge):null});
+  if(a.spouse==='はい'&&spouseTotalIncome!==null&&a.spouseShared==='はい'&&a.spouseClaimed==='いいえ') {
+    spouseDeduction=calculateSpouseDeduction(totalIncome,spouseTotalIncome,{spouseAge:Number.isFinite(Number(a.spouseAge))?Number(a.spouseAge):null});
   }
   if (a.spouse === 'はい') forms.push({name:'配偶者控除等申告書',status:spouseDeduction.status==='unknown'?'所得内容または生計要件が未確認のため、控除額は未計算です。':spouseDeduction.amount===null?'配偶者の年齢を確認してください。':spouseDeduction.amount>0?`配偶者控除等の候補額：${spouseDeduction.amount.toLocaleString('ja-JP')}円。その他の適用要件は確認が必要です。`:'所得要件上、配偶者控除等の候補額はありません。'});
   if(a.spouseClaimed==='はい') addConfirmation('spouse-overlap','配偶者が他の方の扶養親族等として申告されています。申告先の重複がないか会社の担当者へ確認してください。');
@@ -867,7 +867,36 @@ function buildResult(a) {
     addConfirmation(topic,q?.unknown||`${q?.text||key}について会社の担当者へ確認してください。`);
   }
   for(const item of (a.special||[])) if(item!=='どれもない') addConfirmation(item.includes('扶養')?'dependent-overlap':`special:${item}`,`「${item}」について会社の担当者へ確認してください。`);
-  return {forms,docs:[...docs],confirmations:[...confirmationMap.values()],a,calculations:{grossSalary:hasGrossSalary?grossSalary:null,salaryIncome, incomeAdjustmentDeduction, adjustedSalaryIncome,totalIncome,basicDeduction,spouse:{grossIncome:spouseGrossIncome,totalIncome:spouseGrossIncome===null?null:spouseGrossIncome,deduction:spouseDeduction},dependents:dependentResults,deductions:{lifeInsurance,earthquake:earthquakeDeduction,socialInsurance:socialDeduction,smallBusinessMutualAid:mutualAidDeduction,disability:disabilityTotal,singleParentOrWidow:familyDeduction,workingStudent:studentDeduction}}};
+  return {
+    forms,
+    docs: [...docs],
+    confirmations: [...confirmationMap.values()],
+    a,
+    calculations: {
+      grossSalary: hasGrossSalary ? grossSalary : null,
+      salaryIncome,
+      incomeAdjustmentDeduction,
+      adjustedSalaryIncome,
+      totalIncome,
+      basicDeduction,
+      spouse: {
+        // Legacy key: this is income after the salary deduction, not revenue.
+        grossIncome: spouseTotalIncome,
+        totalIncome: spouseTotalIncome === null ? null : spouseTotalIncome,
+        deduction: spouseDeduction,
+      },
+      dependents: dependentResults,
+      deductions: {
+        lifeInsurance,
+        earthquake: earthquakeDeduction,
+        socialInsurance: socialDeduction,
+        smallBusinessMutualAid: mutualAidDeduction,
+        disability: disabilityTotal,
+        singleParentOrWidow: familyDeduction,
+        workingStudent: studentDeduction,
+      },
+    },
+  };
 }
 
   Object.assign(app, { calculateSalaryIncome, calculateBasicDeduction, calculateIncomeAdjustmentDeduction, calculateSpouseDeduction, classifyDependentAge, calculateDependentDeduction, calculateSpecificRelativeDeduction, buildResult });

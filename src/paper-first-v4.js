@@ -25,6 +25,13 @@ export const PAPER_TABS_V4 = Object.freeze([
   {id:'insuranceForm',asset:'insurance',short:'保険料の用紙',groups:['identity','life','earthquake','social','ideco','dependents','special']}
 ]);
 
+// Follow paper sections in reading order, visiting shared question groups once.
+export function orderedPaperGroupsV4(tabId){
+ const tab=PAPER_TABS_V4.find(item=>item.id===tabId);
+ const visibleGroups=new Set(paperZonesV4(tabId).map(zone=>zone.group));
+ return tab?.groups.filter(group=>visibleGroups.has(group))||[];
+}
+
 const REGION_GROUP_V4 = Object.freeze({
   fuyouHead:'identity',fuyouSpouse:'spouse',fuyouDependent:'dependents',fuyouUnder16:'dependents',
   fuyouDisability:'disability',fuyouParent:'family',fuyouStudent:'student',

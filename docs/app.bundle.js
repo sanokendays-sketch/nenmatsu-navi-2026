@@ -769,10 +769,10 @@ function buildResult(a) {
   const adjustedSalaryIncome=salaryIncome===null||incomeAdjustmentDeduction===null?null:Math.max(0,salaryIncome-incomeAdjustmentDeduction);
   let totalIncome = a.otherIncome === 'ない' && hasGrossSalary ? adjustedSalaryIncome : null;
   const basicDeduction = totalIncome === null ? null : calculateBasicDeduction(totalIncome);
-  const spouseGrossIncome=incomeFromAnswer(a.spouseIncomeType,a.spouseSalary);
+  const spouseTotalIncome=incomeFromAnswer(a.spouseIncomeType,a.spouseSalary);
   let spouseDeduction={type:'none',amount:0,status:'unknown'};
-  if(a.spouse==='はい'&&spouseGrossIncome!==null&&a.spouseShared==='はい'&&a.spouseClaimed==='いいえ') {
-    spouseDeduction=calculateSpouseDeduction(totalIncome,spouseGrossIncome,{spouseAge:Number.isFinite(Number(a.spouseAge))?Number(a.spouseAge):null});
+  if(a.spouse==='はい'&&spouseTotalIncome!==null&&a.spouseShared==='はい'&&a.spouseClaimed==='いいえ') {
+    spouseDeduction=calculateSpouseDeduction(totalIncome,spouseTotalIncome,{spouseAge:Number.isFinite(Number(a.spouseAge))?Number(a.spouseAge):null});
   }
   if (a.spouse === 'はい') forms.push({name:'配偶者控除等申告書',status:spouseDeduction.status==='unknown'?'所得内容または生計要件が未確認のため、控除額は未計算です。':spouseDeduction.amount===null?'配偶者の年齢を確認してください。':spouseDeduction.amount>0?`配偶者控除等の候補額：${spouseDeduction.amount.toLocaleString('ja-JP')}円。その他の適用要件は確認が必要です。`:'所得要件上、配偶者控除等の候補額はありません。'});
   if(a.spouseClaimed==='はい') addConfirmation('spouse-overlap','配偶者が他の方の扶養親族等として申告されています。申告先の重複がないか会社の担当者へ確認してください。');
@@ -867,7 +867,36 @@ function buildResult(a) {
     addConfirmation(topic,q?.unknown||`${q?.text||key}について会社の担当者へ確認してください。`);
   }
   for(const item of (a.special||[])) if(item!=='どれもない') addConfirmation(item.includes('扶養')?'dependent-overlap':`special:${item}`,`「${item}」について会社の担当者へ確認してください。`);
-  return {forms,docs:[...docs],confirmations:[...confirmationMap.values()],a,calculations:{grossSalary:hasGrossSalary?grossSalary:null,salaryIncome, incomeAdjustmentDeduction, adjustedSalaryIncome,totalIncome,basicDeduction,spouse:{grossIncome:spouseGrossIncome,totalIncome:spouseGrossIncome===null?null:spouseGrossIncome,deduction:spouseDeduction},dependents:dependentResults,deductions:{lifeInsurance,earthquake:earthquakeDeduction,socialInsurance:socialDeduction,smallBusinessMutualAid:mutualAidDeduction,disability:disabilityTotal,singleParentOrWidow:familyDeduction,workingStudent:studentDeduction}}};
+  return {
+    forms,
+    docs: [...docs],
+    confirmations: [...confirmationMap.values()],
+    a,
+    calculations: {
+      grossSalary: hasGrossSalary ? grossSalary : null,
+      salaryIncome,
+      incomeAdjustmentDeduction,
+      adjustedSalaryIncome,
+      totalIncome,
+      basicDeduction,
+      spouse: {
+        // Legacy key: this is income after the salary deduction, not revenue.
+        grossIncome: spouseTotalIncome,
+        totalIncome: spouseTotalIncome === null ? null : spouseTotalIncome,
+        deduction: spouseDeduction,
+      },
+      dependents: dependentResults,
+      deductions: {
+        lifeInsurance,
+        earthquake: earthquakeDeduction,
+        socialInsurance: socialDeduction,
+        smallBusinessMutualAid: mutualAidDeduction,
+        disability: disabilityTotal,
+        singleParentOrWidow: familyDeduction,
+        workingStudent: studentDeduction,
+      },
+    },
+  };
 }
 
   Object.assign(app, { calculateSalaryIncome, calculateBasicDeduction, calculateIncomeAdjustmentDeduction, calculateSpouseDeduction, classifyDependentAge, calculateDependentDeduction, calculateSpecificRelativeDeduction, buildResult });
@@ -2018,6 +2047,13 @@ const PAPER_TABS_V4 = Object.freeze([
   {id:'insuranceForm',asset:'insurance',short:'保険料の用紙',groups:['identity','life','earthquake','social','ideco','dependents','special']}
 ]);
 
+// Follow paper sections in reading order, visiting shared question groups once.
+function orderedPaperGroupsV4(tabId){
+ const tab=PAPER_TABS_V4.find(item=>item.id===tabId);
+ const visibleGroups=new Set(paperZonesV4(tabId).map(zone=>zone.group));
+ return tab?.groups.filter(group=>visibleGroups.has(group))||[];
+}
+
 const REGION_GROUP_V4 = Object.freeze({
   fuyouHead:'identity',fuyouSpouse:'spouse',fuyouDependent:'dependents',fuyouUnder16:'dependents',
   fuyouDisability:'disability',fuyouParent:'family',fuyouStudent:'student',
@@ -2142,7 +2178,7 @@ function paperPreflightV4(tabId,answers,identity,guide,page){
  return paperPreflightDetailsV4(tabId,answers,identity,guide,page).map(item=>item.message);
 }
 
-  Object.assign(app, { PAPER_GROUPS_V4, PAPER_TABS_V4, paperZonesV4, groupSequenceV4, groupStatusV4, groupPendingV4, visiblePaperEntryV4, paperPreflightDetailsV4, paperPreflightV4 });
+  Object.assign(app, { PAPER_GROUPS_V4, PAPER_TABS_V4, orderedPaperGroupsV4, paperZonesV4, groupSequenceV4, groupStatusV4, groupPendingV4, visiblePaperEntryV4, paperPreflightDetailsV4, paperPreflightV4 });
 }(window.YearEndApp));
 
 /* session-v4.js */
@@ -2212,7 +2248,7 @@ function readDraftV4(text){
 
 /* app-v4.js */
 (function (app) {
-  const { buildResult, buildFormGuide, QUESTIONS, baseQuestionId, commitWizardAnswer, contractAnswer, SAME_CONTRACT_HOLDER, questionCopyV3, choiceLabelV3, parseNumberV3, FORM_PREVIEW_ASSETS, createIdentityV3, syncIdentityV3, captureIdentityFormV3, validateIdentityV3, attachIdentityToGuideV3, renderIdentityEditorV3, buildOfficialOutputV3, renderOfficialPageSvgV3, renderInsuranceSupplement, PAPER_GROUPS_V4, PAPER_TABS_V4, paperZonesV4, groupSequenceV4, groupPendingV4, groupStatusV4, visiblePaperEntryV4, paperPreflightDetailsV4, serializeDraftV4, readDraftV4, draftHasDataV4 } = app;
+  const { buildResult, buildFormGuide, QUESTIONS, baseQuestionId, commitWizardAnswer, contractAnswer, SAME_CONTRACT_HOLDER, questionCopyV3, choiceLabelV3, parseNumberV3, FORM_PREVIEW_ASSETS, createIdentityV3, syncIdentityV3, captureIdentityFormV3, validateIdentityV3, attachIdentityToGuideV3, renderIdentityEditorV3, buildOfficialOutputV3, renderOfficialPageSvgV3, renderInsuranceSupplement, PAPER_GROUPS_V4, PAPER_TABS_V4, paperZonesV4, orderedPaperGroupsV4, groupSequenceV4, groupPendingV4, groupStatusV4, visiblePaperEntryV4, paperPreflightDetailsV4, serializeDraftV4, readDraftV4, draftHasDataV4 } = app;
 
 
 
@@ -2229,6 +2265,47 @@ function readDraftV4(text){
 const root=document.querySelector('#app');
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let answers={},identity=createIdentityV3(),identityDraft=null,tabId='dependentForm',zoneId=null,activeGroup=null,activeQuestion=null,preflightOpen=false,printAcknowledged=false,zoomed=false,saveMessage='';
+let guidedMode=false;
+
+function focusEditor(){
+ const panel=root.querySelector('.v4-editor');
+ const heading=panel?.querySelector('form[data-question] h3')||panel?.querySelector('h2');
+ if(!panel||!heading)return;
+ panel.scrollTop=0;
+ heading.tabIndex=-1;
+ heading.focus({preventScroll:true});
+ const bounds=heading.getBoundingClientRect();
+ if(window.matchMedia('(max-width:1100px)').matches||bounds.top<0||bounds.bottom>window.innerHeight){
+  panel.scrollIntoView({block:'start',behavior:'auto'});
+ }
+}
+
+function guidedNextButton(){
+ if(!guidedMode)return '';
+ const group=zone()?.group||activeGroup;
+ const groups=orderedPaperGroupsV4(tabId);
+ const hasNext=groups.slice(groups.indexOf(group)+1).some(id=>id==='identity'?visibleStatus(id)!=='complete':groupPendingV4(id,answers));
+ return `<button type="button" class="button v3-primary" data-action="guided-next">${hasNext?'次の記入欄へ進む':'この用紙の入力を確認する'}</button>`;
+}
+
+function showPreflight(){
+ preflightOpen=true;printAcknowledged=false;render();
+ const panel=root.querySelector('#v4-preflight'),heading=panel?.querySelector('h2');
+ if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}
+ panel?.scrollIntoView({block:'start',behavior:'auto'});
+}
+
+function startInOrder(){
+ guidedMode=true;
+ const next=orderedPaperGroupsV4(tabId).find(id=>id==='identity'?visibleStatus(id)!=='complete':groupPendingV4(id,answers));
+ if(next)openGroup(next);else showPreflight();
+}
+
+function advanceInOrder(){
+ const current=zone()?.group||activeGroup,groups=orderedPaperGroupsV4(tabId);
+ const next=groups.slice(groups.indexOf(current)+1).find(id=>id==='identity'?visibleStatus(id)!=='complete':groupPendingV4(id,answers));
+ if(next)openGroup(next);else showPreflight();
+}
 
 function guide(){
  const base=buildFormGuide(buildResult(answers));
@@ -2267,7 +2344,7 @@ function paper(page){
   return `<button type="button" class="v4-hotspot is-${status} ${active?'is-active':''}" data-zone="${z.id}" aria-label="${esc(z.title)}：${groupBadge(z.group)}。この欄を開く" aria-pressed="${active}" style="left:${x/a.width*100}%;top:${y/a.height*100}%;width:${w/a.width*100}%;height:${h/a.height*100}%"><span>${esc(PAPER_GROUPS_V4[z.group].title)}<strong>${groupBadge(z.group)}</strong></span></button>`;
  }).join('');
  const groups=[...new Set(zones.map(z=>z.group))];
- return `<section class="v4-paper-card card" aria-label="${esc(current.short)}の申告書"><div class="v4-paper-top"><div><p class="eyebrow">令和8年分の実際の用紙</p><h1>${esc(current.short)}</h1><p>色の枠を選ぶと、その欄に必要な質問が開きます。回答は用紙へ反映します。</p></div><a href="${esc(page.asset.pdf)}" target="_blank" rel="noopener">国税庁の用紙PDFを見る</a></div><div class="v4-status-legend" aria-label="枠の色の意味"><span class="is-not_started">未入力</span><span class="is-in_progress">入力中</span><span class="is-complete">入力済み</span><span class="is-needs_confirmation">要確認</span></div><button class="button secondary v4-zoom" data-action="zoom" aria-pressed="${zoomed}">${zoomed?'標準サイズへ戻す':'用紙を大きく見る'}</button><div class="v4-paper-scroll"><div class="v4-paper-canvas ${zoomed?'is-zoomed':''}">${renderOfficialPageSvgV3(page)}${markers}</div></div><p class="v4-small">画像は国税庁の令和8年分空欄様式の表面です。枠・青い文字はこのアプリの記入例です。未入力・未確定の欄は空欄のままです。</p><details class="v4-region-list"><summary>記入欄を一覧から選ぶ</summary><div class="v4-region-buttons">${zones.map(z=>`<button class="button secondary" data-zone="${z.id}">${esc(z.title)} <small>${groupBadge(z.group)}</small></button>`).join('')}</div></details><div class="v4-paper-actions"><button class="button v3-primary" data-action="preflight">この用紙の未記入を確認してPDFにする</button><button class="button secondary" data-action="select-identity">名前・住所を入力</button></div></section>`;
+ return `<section class="v4-paper-card card" aria-label="${esc(current.short)}の申告書"><div class="v4-paper-top"><div><p class="eyebrow">令和8年分の実際の用紙</p><h1>${esc(current.short)}</h1><p>色の枠を選ぶと、その欄に必要な質問が開きます。回答は用紙へ反映します。</p></div><a href="${esc(page.asset.pdf)}" target="_blank" rel="noopener">国税庁の用紙PDFを見る</a></div><div class="v4-start-actions"><button type="button" class="button secondary" data-action="guided-start">上から順に答える</button><p>初めての方は、この用紙の未入力の欄を順番に進められます。色枠から直接入力することもできます。</p></div><div class="v4-status-legend" aria-label="枠の色の意味"><span class="is-not_started">未入力</span><span class="is-in_progress">入力中</span><span class="is-complete">入力済み</span><span class="is-needs_confirmation">要確認</span></div><button class="button secondary v4-zoom" data-action="zoom" aria-pressed="${zoomed}">${zoomed?'用紙全体を表示する':'用紙を大きく見る'}</button><div class="v4-paper-scroll ${zoomed?'is-zoomed':''}"><div class="v4-paper-canvas ${zoomed?'is-zoomed':''}">${renderOfficialPageSvgV3(page)}${markers}</div></div><p class="v4-small">画像は国税庁の令和8年分空欄様式の表面です。枠・青い文字はこのアプリの記入例です。未入力・未確定の欄は空欄のままです。</p><details class="v4-region-list"><summary>記入欄を一覧から選ぶ</summary><div class="v4-region-buttons">${zones.map(z=>`<button class="button secondary" data-zone="${z.id}">${esc(z.title)} <small>${groupBadge(z.group)}</small></button>`).join('')}</div></details><div class="v4-paper-actions"><button class="button v3-primary" data-action="preflight">この用紙の未記入を確認してPDFにする</button><button class="button secondary" data-action="select-identity">名前・住所を入力</button></div></section>`;
 }
 function questionControls(id){
  const q=QUESTIONS[baseQuestionId(id)],value=contractAnswer(id,answers);
@@ -2283,15 +2360,15 @@ function questionControls(id){
 }
 function editor(){
  const selected=zone(),groupId=selected?.group||activeGroup,location=selected?.title||PAPER_GROUPS_V4[groupId]?.title;
- if(!groupId)return `<section class="card v4-editor"><h2>用紙の記入欄を選んでください</h2><p>左の色の枠をクリックすると、ここに質問が出ます。小さい枠は「記入欄を一覧から選ぶ」からも開けます。</p><p>回答は自動保存・送信されません。続きから使う場合は作業ファイルを保存してください。</p></section>`;
+ if(!groupId)return `<section class="card v4-editor"><h2>用紙の記入欄を選んでください</h2><p>用紙の色枠、または「上から順に答える」を選ぶと、ここに質問が出ます。小さい枠は「記入欄を一覧から選ぶ」からも開けます。</p><p>回答は自動保存・送信されません。続きから使う場合は作業ファイルを保存してください。</p></section>`;
  const group=PAPER_GROUPS_V4[groupId];
  if(groupId==='identity')return `<section class="card v4-editor"><p class="eyebrow">選んだ場所：${esc(location)}</p>${renderIdentityEditorV3(identityDraft||identity,answers,{storageNote:'入力は自動保存・送信されません。「作業ファイルを保存」を押した場合は氏名等もファイルに含まれます。'})}</section>`;
  const sequence=groupSequenceV4(groupId,answers),pending=groupPendingV4(groupId,answers),id=activeQuestion&&sequence.includes(activeQuestion)?activeQuestion:pending;
  const list=sequence.filter(x=>Object.hasOwn(answers,x));
  const review=list.length?`<details class="v4-answers"><summary>この欄の回答を直す（${list.length}件）</summary>${list.map(x=>`<button type="button" class="button tertiary" data-edit="${esc(x)}">${esc(questionCopyV3(x).title)}：${esc(Array.isArray(answers[x])?answers[x].map(choiceLabelV3).join('、'):choiceLabelV3(String(contractAnswer(x,answers))))}</button>`).join('')}</details>`:'';
- if(!id)return `<section class="card v4-editor"><p class="eyebrow">選んだ場所：${esc(location)}</p><h2>${esc(group.title)}の質問は終わりました</h2><p>入力した内容は用紙に反映されています。空欄や「分からない」と答えた箇所はPDF出力前に確認できます。</p>${review}<button class="button secondary" data-action="select-identity">氏名・住所も入力する</button></section>`;
+ if(!id)return `<section class="card v4-editor"><p class="eyebrow">選んだ場所：${esc(location)}</p><h2>${esc(group.title)}の質問は終わりました</h2><p>入力した内容は用紙に反映されています。空欄や「分からない」と答えた箇所はPDF出力前に確認できます。</p>${review}${guidedNextButton()}<button class="button secondary" data-action="select-identity">氏名・住所も入力する</button></section>`;
  const copy=questionCopyV3(id);
- return `<section class="card v4-editor"><p class="eyebrow">選んだ場所：${esc(location)}</p><h2>${esc(group.title)}</h2><p class="v4-progress">この欄の ${Math.max(1,sequence.indexOf(id)+1)} 問目</p><form data-question="${esc(id)}" novalidate><h3>${esc(copy.title)}</h3><p>${esc(copy.help)}</p>${copy.example?`<p class="v4-example">例：${esc(copy.example)}</p>`:''}${questionControls(id)}<p class="v3-error" id="v4-error" role="alert" hidden></p></form>${review}</section>`;
+ return `<section class="card v4-editor"><p class="eyebrow">選んだ場所：${esc(location)}</p><h2>${esc(group.title)}</h2><p class="v4-progress">この欄の ${Math.max(1,sequence.indexOf(id)+1)} 問目</p><form data-question="${esc(id)}" aria-labelledby="v4-question-title" novalidate><h3 id="v4-question-title">${esc(copy.title)}</h3><p>${esc(copy.help)}</p>${copy.example?`<p class="v4-example">例：${esc(copy.example)}</p>`:''}${questionControls(id)}<p class="v3-error" id="v4-error" role="alert" hidden></p></form>${review}</section>`;
 }
 function preflight(data){
  if(!preflightOpen)return '';
@@ -2306,19 +2383,42 @@ function printAnnex(page){
   .replace('提出者氏名・勤務先は印刷後に記入してください。','未入力の提出者氏名・勤務先は印刷後に記入してください。');
 }
 function render(){
+ const oldSvg=root.querySelector('.v4-paper-canvas svg');
+ const oldScroll=root.querySelector('.v4-paper-scroll');
+ const scrollPosition={left:oldScroll?.scrollLeft||0,top:oldScroll?.scrollTop||0};
  identity=syncIdentityV3(identity,answers);
  const data=guide(),page=paperPage(data);
  root.innerHTML=`<nav class="v4-tabs" aria-label="申告書を選ぶ">${PAPER_TABS_V4.map(t=>`<button type="button" data-tab="${t.id}" class="${tabId===t.id?'is-current':''}" aria-current="${tabId===t.id?'page':'false'}">${esc(t.short)}</button>`).join('')}</nav><section class="v4-savebar" aria-label="作業の保存と再開"><div><strong>途中でやめるとき</strong><p>回答は自動保存しません。保存した作業ファイルには氏名・住所なども含まれます。ご自身だけが使える場所に保管してください。</p></div><button class="button secondary" data-action="save-draft">作業ファイルを保存</button><button class="button secondary" data-action="load-draft">作業ファイルから再開</button><input id="v4-draft-file" type="file" accept=".json,application/json" hidden><p class="v4-save-message" role="status">${esc(saveMessage)}</p></section><div class="v4-layout">${paper(page)}${editor()}</div><div class="v4-bottom"><button class="button secondary" data-action="select-special">そのほかの事情を確認する</button><button class="button tertiary" data-action="reset">回答を最初からやり直す</button><p>住宅ローン控除の用紙は、ご本人へ交付された書類を使用してください。<button class="v4-text-button" data-action="select-housing">住宅ローンの確認へ</button></p></div>${preflight(data)}<div class="v4-print-sheet"><div class="v4-main-sheet">${renderOfficialPageSvgV3(page)}<p>令和8年分の記入例（未完成）／空欄・該当チェックはご自身で確認・記入</p></div>${printAnnex(page)}</div>`;
+ const newSvg=root.querySelector('.v4-paper-canvas svg');
+ // Keep the loaded paper image and SVG node when only answers/overlays change.
+ if(oldSvg&&newSvg&&oldSvg.querySelector('image')?.getAttribute('href')===newSvg.querySelector('image')?.getAttribute('href')){
+  oldSvg.setAttribute('aria-label',newSvg.getAttribute('aria-label'));
+  oldSvg.replaceChildren(oldSvg.querySelector('image'),...newSvg.querySelectorAll(':scope > g'));
+  newSvg.replaceWith(oldSvg);
+  const scroll=root.querySelector('.v4-paper-scroll');scroll.scrollLeft=scrollPosition.left;scroll.scrollTop=scrollPosition.top;
+ }
 }
-function selectZone(id){zoneId=id;activeGroup=null;activeQuestion=null;preflightOpen=false;printAcknowledged=false;render();root.querySelector('.v4-editor h2')?.focus?.();}
-function openGroup(groupId){const z=paperZonesV4(tabId).find(x=>x.group===groupId);if(z)selectZone(z.id);else{zoneId=null;activeGroup=groupId;activeQuestion=null;preflightOpen=false;printAcknowledged=false;render();}}
+function renderSelection(){
+ const sameTab=root.querySelector('.v4-tabs .is-current')?.dataset.tab===tabId;
+ if(!sameTab||!root.querySelector('.v4-editor')){render();return;}
+ const template=document.createElement('template');template.innerHTML=editor();
+ root.querySelector('.v4-editor').replaceWith(template.content);
+ for(const button of root.querySelectorAll('.v4-hotspot')){
+  const selected=button.dataset.zone===zoneId;
+  button.classList.toggle('is-active',selected);
+  button.setAttribute('aria-pressed',String(selected));
+ }
+ if(!preflightOpen)root.querySelector('#v4-preflight')?.remove();
+}
+function selectZone(id){zoneId=id;activeGroup=null;activeQuestion=null;preflightOpen=false;printAcknowledged=false;renderSelection();focusEditor();}
+function openGroup(groupId){const z=paperZonesV4(tabId).find(x=>x.group===groupId);if(z)selectZone(z.id);else{zoneId=null;activeGroup=groupId;activeQuestion=null;preflightOpen=false;printAcknowledged=false;renderSelection();focusEditor();}}
 function showError(message){const el=root.querySelector('#v4-error');if(el){el.hidden=false;el.textContent=message;}root.querySelector('[name="answer"]')?.focus();}
 function answer(value){
  const id=root.querySelector('form[data-question]')?.dataset.question;if(!id)return;
  commitWizardAnswer(answers,id,value);
  identity=syncIdentityV3(identity,answers);
  if(identityDraft)identityDraft=syncIdentityV3(identityDraft,answers);
- activeQuestion=null;preflightOpen=false;printAcknowledged=false;saveMessage='変更があります。続きから使う場合は作業ファイルをもう一度保存してください。';render();
+ activeQuestion=null;preflightOpen=false;printAcknowledged=false;saveMessage='変更があります。続きから使う場合は作業ファイルをもう一度保存してください。';render();focusEditor();
 }
 function showSaveMessage(message){saveMessage=message;const node=root.querySelector('.v4-save-message');if(node)node.textContent=message;}
 function saveDraft(){
@@ -2340,7 +2440,7 @@ async function loadDraft(file){
   const loaded=readDraftV4(await file.text());
   if(draftHasDataV4(answers,identity,identityDraft)&&!window.confirm('現在の入力を作業ファイルの内容に置き換えますか？'))return;
   answers=loaded.answers;identity=loaded.identity;identityDraft=null;tabId=loaded.tabId;
-  zoneId=null;activeGroup=null;activeQuestion=null;preflightOpen=false;printAcknowledged=false;
+  zoneId=null;activeGroup=null;activeQuestion=null;preflightOpen=false;printAcknowledged=false;guidedMode=false;
   saveMessage='作業ファイルを読み込みました。用紙上の内容を確認してから続きを入力してください。';render();
  }catch(error){showSaveMessage(`読み込めませんでした：${error.message}`);}
 }
@@ -2354,7 +2454,7 @@ async function printPaper(){
   if(tabId!==selectedTab||!preflightOpen||!printAcknowledged)return;
   document.body.classList.add('v4-printing');
   try{window.print();}finally{document.body.classList.remove('v4-printing');}
- }catch{if(error){error.hidden=false;error.textContent='申告書画像を読み込めませんでした。v4フォルダーのformsを確認してください。';}}
+ }catch{if(error){error.hidden=false;error.textContent='申告書画像を読み込めませんでした。作業ファイルを保存してから、ページを開き直してください。';}}
 }
 root.addEventListener('input',event=>{const form=event.target.closest('form[data-identity-form]');if(form){identityDraft=captureIdentityFormV3(form,answers);saveMessage='変更があります。続きから使う場合は作業ファイルをもう一度保存してください。';const message=root.querySelector('.v4-save-message');if(message)message.textContent=saveMessage;}});
 root.addEventListener('change',async event=>{
@@ -2372,7 +2472,7 @@ root.addEventListener('submit',event=>{
  if(form.matches('[data-identity-form]')){
   const result=validateIdentityV3(captureIdentityFormV3(form,answers),answers);
   if(!result.ok){const error=root.querySelector('#v3-identity-error');error.hidden=false;error.textContent=result.errors.map(x=>x.message).join(' ');const field=[...form.querySelectorAll('[data-identity-path]')].find(x=>x.dataset.identityPath===result.errors[0].path);field?.setAttribute('aria-invalid','true');field?.focus();return;}
-  identity=result.identity;identityDraft=null;saveMessage='変更があります。続きから使う場合は作業ファイルをもう一度保存してください。';render();return;
+  identity=result.identity;identityDraft=null;saveMessage='変更があります。続きから使う場合は作業ファイルをもう一度保存してください。';render();if(guidedMode)advanceInOrder();else focusEditor();return;
  }
  const id=form.dataset.question,q=QUESTIONS[baseQuestionId(id)];
  if(q.input==='text'){const value=form.querySelector('[name="answer"]').value.trim();if(!value||value.length>80){showError('証明書の内容を1〜80文字で入力してください。');return;}answer(value);return;}
@@ -2383,31 +2483,34 @@ root.addEventListener('submit',event=>{
 });
 root.addEventListener('click',event=>{
  const button=event.target.closest('button');if(!button)return;
- if(button.dataset.tab){tabId=button.dataset.tab;zoneId=null;activeGroup=null;activeQuestion=null;preflightOpen=false;printAcknowledged=false;render();return;}
- if(button.dataset.zone){selectZone(button.dataset.zone);return;}
+ if(button.dataset.tab){guidedMode=false;tabId=button.dataset.tab;zoneId=null;activeGroup=null;activeQuestion=null;preflightOpen=false;printAcknowledged=false;render();return;}
+ if(button.dataset.zone){guidedMode=false;selectZone(button.dataset.zone);return;}
  if(button.dataset.jumpGroup){
+  guidedMode=false;
   const groupId=button.dataset.jumpGroup;
   if(!paperZonesV4(tabId).some(z=>z.group===groupId)){
    const destination=PAPER_TABS_V4.find(item=>paperZonesV4(item.id).some(z=>z.group===groupId));
    if(destination)tabId=destination.id;
   }
-  openGroup(groupId);root.querySelector('.v4-editor')?.scrollIntoView({block:'start',behavior:'smooth'});return;
+  openGroup(groupId);return;
  }
- if(button.dataset.edit){activeQuestion=button.dataset.edit;render();return;}
+ if(button.dataset.edit){activeQuestion=button.dataset.edit;renderSelection();focusEditor();return;}
  const action=button.dataset.action;
+ if(action==='guided-start')startInOrder();
+ if(action==='guided-next')advanceInOrder();
  if(action==='unknown')answer('分からない');
  if(action==='reuse')answer(SAME_CONTRACT_HOLDER);
- if(action==='zoom'){zoomed=!zoomed;root.querySelector('.v4-paper-canvas')?.classList.toggle('is-zoomed',zoomed);button.textContent=zoomed?'標準サイズへ戻す':'用紙を大きく見る';button.setAttribute('aria-pressed',String(zoomed));}
+ if(action==='zoom'){zoomed=!zoomed;root.querySelector('.v4-paper-canvas')?.classList.toggle('is-zoomed',zoomed);root.querySelector('.v4-paper-scroll')?.classList.toggle('is-zoomed',zoomed);button.textContent=zoomed?'用紙全体を表示する':'用紙を大きく見る';button.setAttribute('aria-pressed',String(zoomed));}
  if(action==='select-identity')openGroup('identity');
- if(action==='select-special'){tabId='dependentForm';openGroup('special');}
- if(action==='select-housing'){tabId='combinedForm';openGroup('housing');}
- if(action==='preflight'){preflightOpen=true;printAcknowledged=false;render();root.querySelector('#v4-preflight')?.scrollIntoView({block:'start',behavior:'smooth'});}
+ if(action==='select-special'){guidedMode=false;tabId='dependentForm';openGroup('special');}
+ if(action==='select-housing'){guidedMode=false;tabId='combinedForm';openGroup('housing');}
+ if(action==='preflight')showPreflight();
  if(action==='close-preflight'){preflightOpen=false;printAcknowledged=false;render();}
  if(action==='print')printPaper();
  if(action==='save-draft')saveDraft();
  if(action==='load-draft')root.querySelector('#v4-draft-file')?.click();
  if(action==='clear-identity'&&window.confirm('氏名・住所等の入力を消しますか？税の回答は残します。')){identity=createIdentityV3();identityDraft=null;saveMessage='氏名・住所を消しました。保存済みの作業ファイルには反映されません。';render();}
- if(action==='reset'&&window.confirm('入力した回答と氏名等をすべて消しますか？')){answers={};identity=createIdentityV3();identityDraft=null;zoneId=null;activeGroup=null;activeQuestion=null;preflightOpen=false;printAcknowledged=false;saveMessage='画面の入力を消しました。保存済みの作業ファイルは端末から別途削除してください。';render();}
+ if(action==='reset'&&window.confirm('入力した回答と氏名等をすべて消しますか？')){guidedMode=false;answers={};identity=createIdentityV3();identityDraft=null;zoneId=null;activeGroup=null;activeQuestion=null;preflightOpen=false;printAcknowledged=false;saveMessage='画面の入力を消しました。保存済みの作業ファイルは端末から別途削除してください。';render();}
 });
 render();
 
