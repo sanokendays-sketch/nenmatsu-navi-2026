@@ -1,12 +1,13 @@
-# 令和8年 年末調整おたすけナビ v4
+# 令和8年 年末調整おたすけナビ
 
-令和8年分の申告書の記入欄を選び、その欄に関係する質問へ答える記入ナビです。
+PC・スマートフォン・紙の申告書から、自分に合う入力方法を選べる記入ナビです。
 
-- [最新版 v4 を開く](https://sanokendays-sketch.github.io/nenmatsu-navi-2026/)
-- [一問ずつ進める v3](https://sanokendays-sketch.github.io/nenmatsu-navi-2026/v3/)
-- [ページ別の v2](https://sanokendays-sketch.github.io/nenmatsu-navi-2026/v2/)
+- [入力方法を選ぶ](https://sanokendays-sketch.github.io/nenmatsu-navi-2026/)
+- [PCで用紙に入力](https://sanokendays-sketch.github.io/nenmatsu-navi-2026/paper.html)
+- [スマホで一問ずつ入力](https://sanokendays-sketch.github.io/nenmatsu-navi-2026/v3/)
+- [紙を見ながら入力](https://sanokendays-sketch.github.io/nenmatsu-navi-2026/v2/)
 
-## v4 の使い方
+## 「PCで用紙に入力」の使い方
 
 1. 「家族・本人」「所得・控除」「保険料」から用紙を選び、色の枠を押します。
 2. 右側の質問へ回答すると、記入できる内容が用紙上に反映されます。枠には「未入力・入力中・入力済み・要確認」を表示します。
@@ -27,7 +28,7 @@
 
 ## 開発・公開
 
-公開元は `main /docs`。`src` にソース、`docs` に公開ファイルがあります。Node.js 20以降で `npm run build` を実行すると、v4、v3、v2のバンドルを作成できます。依存パッケージの追加は不要です。
+公開元は `main /docs`。`docs/index.html` が入力方法の選択画面、`docs/paper.html` が用紙入力画面です。`src` にソース、`docs` に公開ファイルがあります。開発上の対応は、PCで用紙に入力＝v4、スマホで一問ずつ入力＝v3、紙を見ながら入力＝v2です。Node.js 20以降で `npm run build` を実行すると3種類のバンドルを作成できます。依存パッケージの追加は不要です。
 
 2026-10-01：v4の17モジュールをビルドし、生成JavaScriptの構文を確認しました。
 

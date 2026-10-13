@@ -1,4 +1,4 @@
-# v4：用紙から入力する
+# PCで用紙に入力する
 
 令和8年分の扶養控除等申告書、基礎控除等の兼用申告書、保険料控除申告書の空欄様式を表示します。用紙上の色枠を押すと、その欄に関連する質問が開きます。小さい枠は「記入欄を一覧から選ぶ」からも開けます。
 
@@ -19,7 +19,8 @@ PDFは記入例です。個人番号、該当チェック、判定区分、計�
 - `src/paper-first-v4.js`：用紙の領域、質問グループ、入力状態、出力前確認。
 - `src/session-v4.js`：作業ファイルの形式と読込時の検証。
 - `src/app-v4.js`：用紙、質問、氏名入力、途中保存、PDF出力前確認と印刷。
-- `docs/index.html`、`docs/style.css`、`docs/app.bundle.js`、`docs/forms/`：公開版。
+- `docs/index.html`：入力方法を選ぶ入口。
+- `docs/paper.html`、`docs/style.css`、`docs/app.bundle.js`、`docs/forms/`：用紙入力の公開版。
 
 2026-10-01：公開用17モジュールのビルドとJavaScript構文を確認。
 
