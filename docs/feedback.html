@@ -84,7 +84,11 @@
     <div class="fb-text" id="text"></div>
     <div class="actions"><button type="button" class="button" id="copy">文をコピーする</button></div>
     <p class="fb-copied" id="copied"></p>
-    <p style="font-size:.9rem;color:#52665b;margin:6px 0 0">コピーしたら、LINEやメールに貼りつけて送れます。画面を見せて口頭で伝えるだけでも十分です。</p>
+    <p style="font-size:.9rem;color:#52665b;margin:6px 0 0">作った人を知っている方は、LINEやメールに貼りつけて送れます。画面を見せて口頭で伝えるだけでも十分です。</p>
+    <h2 style="margin-top:22px">noteで作った人に届ける</h2>
+    <p style="font-size:.95rem;margin:6px 0 0">下のボタンを押すと、文をコピーしてから、このナビを紹介しているnoteの記事を開きます。記事の一番下のコメント欄に貼りつけてください。</p>
+    <div class="actions"><a class="button secondary" id="note" href="https://note.com/witty_finch7812/n/n70fe9136e4dc" target="_blank" rel="noopener" style="text-decoration:none;display:flex;align-items:center;justify-content:center">コピーしてnoteを開く</a></div>
+    <p style="font-size:.85rem;color:#52665b;margin:8px 0 0">noteのコメントは誰でも読める場所に表示されます。コメントにはnoteへのログインが必要です。</p>
    </section>
   </main>
   <footer>このページは入力内容を送信・保存しません。画面を閉じると消えます。<br>国税庁の公式サービスではありません。<br><a href="privacy.html">入力内容の扱い</a></footer>
@@ -112,7 +116,9 @@
    document.getElementById('copied').textContent='';
    var r=document.getElementById('result');r.hidden=false;r.scrollIntoView({behavior:'smooth',block:'start'});
   });
-  document.getElementById('copy').addEventListener('click',function(){
+  document.getElementById('copy').addEventListener('click',copyText);
+  document.getElementById('note').addEventListener('click',copyText);
+  function copyText(){
    var t=document.getElementById('text').textContent,msg=document.getElementById('copied');
    function fallback(){
     var a=document.createElement('textarea');a.value=t;a.setAttribute('readonly','');a.style.position='fixed';a.style.opacity='0';
@@ -124,7 +130,7 @@
    if(navigator.clipboard&&window.isSecureContext){
     navigator.clipboard.writeText(t).then(function(){msg.textContent='コピーしました';},fallback);
    }else{fallback();}
-  });
+  }
  })();
  </script>
 </body>
