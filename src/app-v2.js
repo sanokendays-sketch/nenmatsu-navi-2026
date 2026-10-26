@@ -45,7 +45,7 @@ function previewPanel(item){
 function progressNav(trace){const progress=pageProgress(trace);return `<nav class="v2-progress" aria-label="入力ページ">${WIZARD_PAGES.map((p,i)=>`<button type="button" data-page="${i}" class="v2-page-link ${i===currentPage?'is-current':''}" ${progress[i].status==='locked'?'disabled':''} aria-current="${i===currentPage?'step':'false'}"><span>${String(i+1).padStart(2,'0')}</span>${esc(p.title)}${progress[i].status==='done'?' ✓':''}</button>`).join('')}</nav>`;}
 function renderPage(){
  const trace=traceWizard(answers);
- if(trace.terminal==='end'){root.innerHTML=`<article class="card"><div class="eyebrow">対象確認</div><h1>この会社での年末調整について確認してください</h1><p>「この会社で年末調整を受けない」と回答しました。勤務先または税務署の案内をご確認ください。</p><button class="button secondary" data-action="restart">最初からやり直す</button></article>`;return;}
+ if(trace.terminal==='end'){root.innerHTML=`<article class="card"><div class="eyebrow">対象確認</div><h1>この会社での年末調整について確認してください</h1><p>「この会社で年末調整を受けない」と回答しました。勤務先または税務署の案内をご確認ください。</p><p>押し間違えた場合は、「前の質問に戻る」で答えを選び直せます。</p><div class="actions"><button class="button" data-action="undo-last">前の質問に戻る</button><button class="button secondary" data-action="restart">最初からやり直す</button></div></article>`;return;}
  if(trace.terminal==='result'&&currentPage>=WIZARD_PAGES.length){renderResult();return;}
  const pending=trace.pending?WIZARD_PAGES.findIndex(p=>p.id===trace.items.at(-1).page):WIZARD_PAGES.length;
  if(currentPage>pending)currentPage=pending;
@@ -84,6 +84,7 @@ root.addEventListener('click',event=>{
  const b=event.target.closest('button');if(!b)return;
  if(b.dataset.action==='start'){started=true;render();return;}
  if(b.dataset.action==='restart'){if(window.confirm('入力内容をすべて消して、最初からやり直しますか？')){answers={};currentPage=0;editingId=null;multiDraft={};checked={};openMapId=null;expandedImages={};hiddenValues={};started=false;render();}return;}
+ if(b.dataset.action==='undo-last'){const last=traceWizard(answers).items.filter(x=>x.answered).at(-1);if(last)delete answers[last.id];editingId=null;render();return;}
  if(b.dataset.action==='previous'){currentPage=Math.max(0,currentPage-1);editingId=null;render();return;}
  if(b.dataset.action==='next'){currentPage=Math.min(WIZARD_PAGES.length,currentPage+1);editingId=null;render();return;}
  if(b.dataset.action==='print'){window.print();return;}

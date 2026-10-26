@@ -112,7 +112,7 @@ function editor(){
  const selected=zone(),groupId=selected?.group||activeGroup,location=selected?.title||PAPER_GROUPS_V4[groupId]?.title;
  if(!groupId)return `<section class="card v4-editor"><h2>用紙の記入欄を選んでください</h2><p>用紙の色枠、または「上から順に答える」を選ぶと、ここに質問が出ます。小さい枠は「記入欄を一覧から選ぶ」からも開けます。</p><p>回答は自動保存・送信されません。続きから使う場合は作業ファイルを保存してください。</p></section>`;
  const group=PAPER_GROUPS_V4[groupId];
- if(groupId==='identity')return `<section class="card v4-editor"><p class="eyebrow">選んだ場所：${esc(location)}</p>${renderIdentityEditorV3(identityDraft||identity,answers,{storageNote:'入力は自動保存・送信されません。「作業ファイルを保存」を押した場合は氏名等もファイルに含まれます。'})}</section>`;
+ if(groupId==='identity')return `<section class="card v4-editor"><p class="eyebrow">選んだ場所：${esc(location)}</p>${renderIdentityEditorV3(identityDraft||identity,answers,{heading:'名前や住所を用紙へ入れる（入力は任意）',storageNote:'入力は自動保存・送信されません。「作業ファイルを保存」を押した場合は氏名等もファイルに含まれます。'})}</section>`;
  const sequence=groupSequenceV4(groupId,answers),pending=groupPendingV4(groupId,answers),id=activeQuestion&&sequence.includes(activeQuestion)?activeQuestion:pending;
  const list=sequence.filter(x=>Object.hasOwn(answers,x));
  const review=list.length?`<details class="v4-answers"><summary>この欄の回答を直す（${list.length}件）</summary>${list.map(x=>`<button type="button" class="button tertiary" data-edit="${esc(x)}">${esc(questionCopyV3(x).title)}：${esc(Array.isArray(answers[x])?answers[x].map(choiceLabelV3).join('、'):choiceLabelV3(String(contractAnswer(x,answers))))}</button>`).join('')}</details>`:'';
